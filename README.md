@@ -17,11 +17,13 @@ This project focuses on modelling and analyzing **Collective phases and long-ter
 The paper presents a model in which fish alternate between burst and coast phases, adjusting their motion according to local interactions. The authors identify distinct collective phases and transitions depending on model parameters. This will serve as our baseline for replication and extension.
 
 ## Project Plan and Milestones
-| Deadline | Goal | Description |
-|-----------|------|--------------|
-| **Report 1** | **Literature review and baseline model setup** | Review the paper in depth, understand the mathematical and simulation model, and reproduce the original experiments (burst-and-coast dynamics, phase transitions). |
-| **Report 2** | **Model extensions and parameter exploration** | Add new behavioural or environmental factors (e.g. sensory noise, obstacles, leadership effects, or predator presence). Conduct parameter sweeps to examine stability and transitions. |
-| **Report 3 (Final)** | **Validation, analysis, and discussion** | Compare our extended results with the original findings. Analyze emergent behaviour, visualize trajectories, and summarize conclusions for the final report. |
+## 🧭 Milestones and Deliverables
+
+| Report | Deadline | Description | Group Plan |
+|---------|-----------|--------------|-------------|
+| **Report 1 – Concept Review and Baseline Setup** | **Due:** 16 Nov 2025 | Review existing models and collective behaviour concepts. Present the chosen paper and planned approach. Report follows IMRAD structure (4 pages). Include both `.tex` and `.pdf` in `/reports/report1/`. | – Review relevant literature<br>– Reproduce the base model from Wang et al. (2025)<br>– Outline simulation tools and parameters<br>– Write draft report collaboratively in English |
+| **Report 2 – Methods and Verification Plan** | **Due:** 7 Dec 2025 | Revise Report 1 per feedback. Add detailed methods and proposed verification strategy. Specify each author’s contributions. Follow IMRAD format (4 pages). | – Implement additional parameters and interactions<br>– Define metrics for evaluating collective phases<br>– Run initial experiments<br>– Document author contributions |
+| **Report 3 – Final Report and Presentation** | **Due:** 11 Jan 2026 | Final polished report (≤2000 words, 4 pages). Include comparison with previous research, concise discussion, and ideas for future work. Submit slides (≤20 min presentation). Include both source and `.pdf` in `/reports/report3/`. | – Finalize experiments and visualizations<br>– Write final IMRAD report with discussion and conclusions<br>– Prepare presentation slides<br>– Add clear “How to run” instructions in README |
 
 
 ## References
