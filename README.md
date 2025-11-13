@@ -1,5 +1,7 @@
 # Collective behaviour 2025/2026, group D
 
+For info about the codebase, see [README_DEV.md](./README_DEV.md).
+
 ## Group members
 
 - ja8769: [@jan146](https://github.com/jan146/)
@@ -21,7 +23,7 @@ We have some ideas on how to extend the original paper:
 
 - Provide a more detailed model of the burst phase. The original paper models it as a discrete impulse, which is a simplification of real behavior.
 - Model fish steering during the coast phase. In the original paper, each fish moves in a straight line during the coast.
-- If we can find literature about this happening in nature, simulate interactions between different species of fish. Introduce additional paramters to govern interactions between different species.
+- If we can find literature about this happening in nature, simulate interactions between different species of fish. Introduce additional parameters to govern interactions between different species.
 
 Because we won't know for sure how viable each of these ideas is (e.g. the effects of a more detailed burst phase might turn out to be negligible) until we reproduce the original paper and perform some initial experiments, we can't yet fully commit to any of them.
 

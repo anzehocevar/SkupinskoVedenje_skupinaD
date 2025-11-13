@@ -1,0 +1,41 @@
+{
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.importFormat": "absolute",
+    "python.analysis.diagnosticMode": "workspace",
+    "ruff.organizeImports": true,
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.codeActionsOnSave": {
+            "source.fixAll": "explicit",
+            "source.organizeImports": "explicit",
+        },
+        "editor.formatOnSave": true
+    },
+    "latex-workshop.latex.outDir": "%DIR%/build",
+    "latex-workshop.latex.recipe.default": "latexmk (lualatex)",
+    "latex-workshop.latex.recipes": [
+        {
+            "name": "latexmk (lualatex)",
+            "tools": [
+                "lualatexmk"
+            ]
+        }
+    ],
+    "latex-workshop.latex.tools": [
+        {
+            "args": [
+                "-synctex=1",
+                "-interaction=nonstopmode",
+                "-file-line-error",
+                "-lualatex",
+                "-outdir=%OUTDIR%",
+                "-shell-escape",
+                "%DOC%"
+            ],
+            "command": "latexmk",
+            "env": {},
+            "name": "lualatexmk"
+        },
+    ],
+    "latex-workshop.formatting.latex": "latexindent",
+}
