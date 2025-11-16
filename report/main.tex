@@ -1,73 +1,121 @@
-\documentclass[sigconf,nonacm,authordraft]{acmart}
-%%
-%% \BibTeX command to typeset BibTeX logo in the docs
-\AtBeginDocument{%
-  \providecommand\BibTeX{{%
-    Bib\TeX}}}
+\documentclass[9pt]{pnas-new}
+% Use the lineno option to display guide line numbers if required.
+% Note that the use of elements such as single-column equations
+% may affect the guide line number alignment. 
 
-\settopmatter{printacmref=false}
+% \RequirePackage[english,slovene]{babel} % when writing in slovene
+\RequirePackage[slovene,english]{babel} % when writing in english
 
-\usepackage[english]{babel}
-\usepackage{xcolor}
-\usepackage{amsmath}
-\usepackage{array}
-\usepackage{caption}
-\usepackage{booktabs}
+\templatetype{pnasresearcharticle} % Choose template 
+% {pnasresearcharticle} = Template for a two-column research article
+% {pnasmathematics} = Template for a one-column mathematics article
+% {pnasinvited} = Template for a PNAS invited submission
 
-\urlstyle{tt}
+\selectlanguage{english}
+%\etal{in sod.} % comment out when writing in english
+%\renewcommand{\Authands}{ in } % comment out when writing in english
+%\renewcommand{\Authand}{ in } % comment out when writing in english
 
-%%
-%% end of the preamble, start of the body of the document source.
-\begin{document}
+\newcommand{\set}[1]{\ensuremath{\mathbf{#1}}}
+\renewcommand{\vec}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\uvec}[1]{\ensuremath{\hat{\vec{#1}}}}
+\newcommand{\const}[1]{{\ensuremath{\kappa_\mathrm{#1}}}} 
+\newcommand{\todo}[1]{\textcolor{red}{TODO: #1}\PackageWarning{TODO:}{#1!}}
 
-%%
-%% The "title" command has an optional parameter,
-%% allowing the author to define a "short title" to be used in page headers.
-\title{TODO: Title}
+\newcommand{\num}[1]{#1}
 
+% \graphicspath{{./fig/}}
+
+\title{Effects of burst-and-coast duty cycle on collective behavior in a fish school model}
+
+% Use letters for affiliations, numbers to show equal authorship (if applicable) and to indicate the corresponding author
 \author{Jan Anžur}
 \author{Maks Popovič}
 \author{Anže Hočevar}
 
-%%
-%% The abstract is a short summary of the work to be presented in the
-%% article.
+\affil{Collective behaviour course research seminar report} 
+
+% Please give the surname of the lead author for the running footer
+\leadauthor{Anžur}
+
+\selectlanguage{english}
+
+% Please add here a significance statement to explain the relevance of your work
+\significancestatement{}
+
+% \selectlanguage{english}
+
+% Please include corresponding author, author contribution and author declaration information
+%\authorcontributions{Please provide details of author contributions here.}
+%\authordeclaration{Please declare any conflict of interest here.}
+%\equalauthors{\textsuperscript{1}A.O.(Author One) and A.T. (Author Two) contributed equally to this work (remove if not applicable).}
+%\correspondingauthor{\textsuperscript{2}To whom correspondence should be addressed. E-mail: author.two\@email.com}
+
+% Keywords are not mandatory, but authors are strongly encouraged to provide them. If provided, please include two to five keywords, separated by the pipe symbol, e.g:
+\keywords{Collective behavior $|$ Burst-and-coast $|$ Fish school model}
+
 \begin{abstract}
-    TODO: Abstract
+    Burst-and-coast swimming is a common mode of locomotion among fish.
+    Its asynchronous decision making process significantly affects interactions between fish
+    and collective behavior within a school.
+    Our project expands upon a paper that modeled burst-and-coast swimming and studied its long-term collective
+    behaviour, but modeled the burst phase as an instantaneous impulse.
+    We intend to investigate the effects of this simplification on collective behavior
+    as well as the effects of intermittent movement and asynchronous decision making in general by varying the
+    duty cycle and number of decisions per burst.
 \end{abstract}
 
-%%
-%% This command processes the author and affiliation and title
-%% information and builds the first part of the formatted document.
+\dates{\textbf{\today}}
+\program{BM-RI}
+\vol{2025/26}
+\no{Group D} % group ID
+%\fraca{FRIteza/201516.130}
+
+\begin{document}
+
+% Optional adjustment to line up main text (after abstract) of first page with line numbers, when using both lineno and twocolumn options.
+% You should only change this length when you've finalised the article contents.
+\verticaladjustment{-2pt}
+
 \maketitle
+\thispagestyle{firststyle}
+\ifthenelse{\boolean{shortarticle}}{\ifthenelse{\boolean{singlecolumn}}{\abscontentformatted}{\abscontent}}{}
 
-\section{Introduction}
+% If your first paragraph (i.e. with the \dropcap) contains a list environment (quote, quotation, theorem, definition, enumerate, itemize...), the line after the list may have some extra indentation. If this is the case, add \parshape=0 to the end of the list environment.
 
-TODO
+\section*{Introduction}
 
-\section{Methods}
+\input{introduction.tex}
 
-TODO
+\subsection*{Related work}
 
-\section{Results}
+\input{related_work.tex}
 
-TODO
+\section*{Methods}
 
-\section{Discussion}
+\input{methods.tex}
 
-TODO
+\section*{Results}
 
-\section*{Contributions}
+N/A
 
-TODO
+\section*{Discussion}
 
-%%
-%% The next two lines define the bibliography style to be used, and
-%% the bibliography file.
-\bibliographystyle{ACM-Reference-Format}
-\bibliography{main}
+N/A
 
-\appendix
+\acknow{N/A}
+\showacknow % Display the acknowledgments section
+
+% \pnasbreak splits and balances the columns before the references.
+% If you see unexpected formatting errors, try commenting out this line
+% as it can run into problems with floats and footnotes on the final page.
+%\pnasbreak
+
+\newpage
+\begin{multicols}{2}
+\section*{\bibname}
+% Bibliography
+\bibliography{bibliography}
+\end{multicols}
 
 \end{document}
-% \endinput

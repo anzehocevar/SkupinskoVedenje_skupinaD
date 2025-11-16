@@ -19,18 +19,13 @@ The paper presents a model in which fish alternate between burst and coast phase
 
 ## Planned contributions
 
-We have some ideas on how to extend the original paper:
-
-- Provide a more detailed model of the burst phase. The original paper models it as a discrete impulse, which is a simplification of real behavior.
-- Model fish steering during the coast phase. In the original paper, each fish moves in a straight line during the coast.
-- If we can find literature about this happening in nature, simulate interactions between different species of fish. Introduce additional parameters to govern interactions between different species.
-
-Because we won't know for sure how viable each of these ideas is (e.g. the effects of a more detailed burst phase might turn out to be negligible) until we reproduce the original paper and perform some initial experiments, we can't yet fully commit to any of them.
+We intend to extend the paper by introducing additional parameters to describe the burst phase, and studying their effects on collective behavior.
+Currently, the burst phase is an instantaneous event. We intend to add a "duty cycle" (as per real fish) as well as multiple decision points (not biologically grounded, but will help study the effects of asynchronous decision making by approximating synchronous decision making to an arbitrary degree).
 
 ## Project plan and milestones
 
 | Report | Deadline | Description |
 |--------|----------|-------------|
-| **Report 1: Concept Review and Baseline Setup** | 16 Nov 2025 | Detailed review of existing collective behavior models for fish. Review of literature describing the behavior of real fish to ensure we don't end up modeling something that doesn't happen in nature. |
-| **Report 2: Methods and Verification Plan** | 7 Dec 2025 | Reproduction of original paper. Proposal for contributions and verification methods following initial experiments. |
-| **Report 3: Final Report and Presentation** | 11 Jan 2026 | Final polished report. Includes reproduction of original paper, our contribution, verification results, discussion and ideas for future work. |
+| ✅ **Report 1: Concept Review and Baseline Setup** | 16 Nov 2025 | Detailed review of existing collective behavior models for fish. Review of literature describing the behavior of real fish to ensure we don't end up modeling something that doesn't happen in nature. |
+| ⬜ **Report 2: Methods and Verification Plan** | 7 Dec 2025 | Reproduction of original paper. Proposal for contributions and verification methods following initial experiments. |
+| ⬜ **Report 3: Final Report and Presentation** | 11 Jan 2026 | Final polished report. Includes reproduction of original paper, our contribution, verification results, discussion and ideas for future work. |
