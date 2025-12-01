@@ -11,13 +11,12 @@ from cb25d.simulation_framework import SimulationImpl, SimulationRenderer
 class _Simulation[T: SimulationImpl]:
     """Runs a `SimulationImpl` in a background thread and sends new states through a queue."""
 
-    prerender_dt: float
-    prerender_states: int
-
     _current_state: T
     _current_t: float
     _submitted_t: float
     _submitted_states: SimpleQueue[T]
+    _prerender_dt: float
+    _prerender_states: int
     _event: Event
     _running: bool
     _thread: Thread
@@ -28,8 +27,8 @@ class _Simulation[T: SimulationImpl]:
         self._submitted_t = self._current_t
         self._submitted_states = SimpleQueue()
         self._submitted_states.put(starting_state.snapshot())
-        self.prerender_dt = prerender_dt
-        self.prerender_states = prerender_states
+        self._prerender_dt = prerender_dt
+        self._prerender_states = prerender_states
         self._event = Event()
         self._running = True
         self._thread = Thread(target=self._run)
@@ -37,8 +36,8 @@ class _Simulation[T: SimulationImpl]:
 
     def _should_simulate(self) -> bool:
         return (
-            self._current_t < self._submitted_t + self.prerender_dt
-            or self._submitted_states.qsize() < self.prerender_states
+            self._current_t < self._submitted_t + self._prerender_dt
+            or self._submitted_states.qsize() < self._prerender_states
         )
 
     def _run(self):
@@ -46,9 +45,20 @@ class _Simulation[T: SimulationImpl]:
             if not self._should_simulate():
                 self._event.wait()
                 continue
-            self._current_state.step()
-            self._current_t = self._current_state.time
-            self._submitted_states.put(self._current_state.snapshot())
+            if self._should_simulate():
+                self._current_state.step()
+                self._current_t = self._current_state.time
+                self._submitted_states.put(self._current_state.snapshot())
+
+    @property
+    def prerender_dt(self) -> float:
+        return self._prerender_dt
+
+    @prerender_dt.setter
+    def prerender_dt(self, value: float):
+        if value != self._prerender_dt:
+            self._prerender_dt = value
+            self._event.set()
 
     def get_next_state(self) -> T:
         state = self._submitted_states.get()
