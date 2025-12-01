@@ -1,3 +1,4 @@
+from typing import Iterator
 import numpy as np
 import numpy.typing as npt
 import src.constants
@@ -12,7 +13,7 @@ def initial_conditions(N: int) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
     phi: npt.NDArray = np.random.rand(N) * 2 * np.pi
     return u_x, u_y, phi
 
-def main():
+def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
     np.random.seed(src.constants.seed)
     u_x_last: npt.NDArray
     u_y_last: npt.NDArray
@@ -74,6 +75,7 @@ def main():
         t_next[i] = t + tau_i
         u_x_last[i] = u_x_last[i] + phi_unitvec_x * l_i
         u_y_last[i] = u_y_last[i] + phi_unitvec_y * l_i
+        yield u_x, u_y, phi
 
 if __name__ == "__main__":
-    main()
+    run()
