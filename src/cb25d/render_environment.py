@@ -32,3 +32,8 @@ class RenderEnvironment:
         cx, cy = self.w2s(center_world)
         self.left += (cx - center[0]) * new_scale
         self.top += (cy - center[1]) * new_scale
+
+    def recenter(self, center: tuple[float, float]):
+        self.left, self.top = self.w2s(center)
+        self.left -= self.screen.width / 2 * self.scale
+        self.top -= self.screen.height / 2 * self.scale
