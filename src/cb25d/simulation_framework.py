@@ -7,7 +7,7 @@ Defined separately to make things more readable.
 from abc import ABC, abstractmethod
 from typing import Protocol, Self
 
-import pygame
+from cb25d.render_environment import RenderEnvironment
 
 
 class SimulationImpl(Protocol):
@@ -49,4 +49,4 @@ class SimulationRenderer[T: SimulationImpl](ABC):
     """Renders the simulation inside a pygame window."""
 
     @abstractmethod
-    def draw(self, screen: pygame.Surface, state: T) -> None: ...
+    def draw(self, e: RenderEnvironment, state: T) -> None: ...

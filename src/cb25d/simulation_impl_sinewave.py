@@ -4,6 +4,7 @@ from typing import Self
 import pygame
 from numba.experimental import jitclass
 
+from cb25d.render_environment import RenderEnvironment
 from cb25d.simulation_framework import SimulationRenderer
 
 
@@ -25,7 +26,10 @@ class SimulationImplSinewave:
 
 
 class SimulationRendererSinewave(SimulationRenderer[SimulationImplSinewave]):
-    def draw(self, screen: pygame.Surface, state: SimulationImplSinewave):
+    def draw(self, e: RenderEnvironment, state: SimulationImplSinewave):
         pygame.draw.circle(
-            screen, "red", (40, 60 + math.sin(state.time * math.pi) * 20), 40
+            e.screen,
+            "red",
+            e.w2s((40, 60 + math.sin(state.time * math.pi) * 20)),
+            40 / e.scale,
         )
