@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from pygame import Surface
+from pygame.freetype import Font
 
 
 @dataclass
@@ -16,6 +17,8 @@ class RenderEnvironment:
     mouse_left: int
     mouse_top_rel: int
     mouse_left_rel: int
+
+    font_ui: Font
 
     def i(self, xy: tuple[float, float]) -> tuple[int, int]:
         return int(xy[0]), int(xy[1])

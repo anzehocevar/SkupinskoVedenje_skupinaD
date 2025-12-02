@@ -1,9 +1,14 @@
+import importlib.resources
+import math
 from contextlib import closing, contextmanager
+from fractions import Fraction
 from queue import SimpleQueue
 from threading import Event, Thread
 
 import pygame
+import pygame.freetype
 
+import cb25d.ttf
 from cb25d.render_environment import RenderEnvironment
 from cb25d.simulation_framework import SimulationImpl, SimulationRenderer
 
@@ -81,6 +86,93 @@ def _with_pygame():
         pygame.quit()
 
 
+def _draw_grid(e: RenderEnvironment):
+    size = 20
+    fgcolor = (200, 200, 200)
+
+    w_left, w_top = e.s2w((0, 0))
+    w_right, w_bottom = e.s2w(e.screen.size)
+
+    log_scale = round(math.log10(max(w_right - w_left, w_bottom - w_top))) - 1
+    log_scale_value = 10**log_scale
+    n_decimals = max(0, -log_scale)
+
+    w_left_now = math.ceil(w_left / log_scale_value) * log_scale_value
+    while True:
+        left_now = e.w2s((w_left_now, 0))[0]
+        pygame.draw.line(e.screen, fgcolor, (left_now, 0), (left_now, e.screen.height))
+        s_mark_text, _ = e.font_ui.render(
+            f"{w_left_now:0.{n_decimals}f}", fgcolor=fgcolor, size=size
+        )
+        e.screen.blit(
+            s_mark_text,
+            (
+                left_now + 2,
+                e.screen.height - s_mark_text.height - 1,
+            ),
+        )
+        w_left_now_bkp = w_left_now
+        w_left_now += log_scale_value
+        if w_left_now == w_left_now_bkp or w_right <= w_left_now:
+            break
+
+    w_top_now = math.ceil(w_top / log_scale_value) * log_scale_value
+    while True:
+        top_now = e.w2s((0, w_top_now))[1]
+        pygame.draw.line(e.screen, fgcolor, (0, top_now), (e.screen.width, top_now))
+        s_mark_text, _ = e.font_ui.render(
+            f"{w_top_now:0.{n_decimals}f}", fgcolor=fgcolor, size=size
+        )
+        e.screen.blit(s_mark_text, (1, top_now + 2))
+        w_top_now_bkp = w_top_now
+        w_top_now += log_scale_value
+        if w_top_now == w_top_now_bkp or w_bottom <= w_top_now:
+            break
+
+
+def _draw_clock(e: RenderEnvironment, t: float, timescale: Fraction, paused: bool):
+    size = 24
+    line_height = 28
+    w_pad = line_height - size
+    fgcolor = (255, 255, 255)
+    bgcolor = (0, 0, 0, 200)
+
+    h_last = e.screen.height
+
+    n_decimals = 2 + max(-2, round(-math.log10(timescale)))
+    s_time_text, _ = e.font_ui.render(
+        f"{t:0.{n_decimals}f}s", fgcolor=fgcolor, size=size
+    )
+    s_time_bg = pygame.Surface((s_time_text.width + w_pad, line_height))
+    s_time_bg.set_alpha(bgcolor[3])
+    s_time_bg.fill(bgcolor)
+    e.screen.blit(s_time_bg, (0, h_last - s_time_bg.height))
+    e.screen.blit(
+        s_time_text,
+        (
+            (s_time_bg.width - s_time_text.width) / 2,
+            h_last - (s_time_bg.height + s_time_text.height) / 2,
+        ),
+    )
+
+    h_last -= line_height
+
+    s_timescale_text, _ = e.font_ui.render(
+        f"{timescale}x{' (paused)' if paused else ''}", fgcolor=fgcolor, size=size
+    )
+    s_timescale_bg = pygame.Surface((s_timescale_text.width + w_pad, line_height))
+    s_timescale_bg.set_alpha(bgcolor[3])
+    s_timescale_bg.fill(bgcolor)
+    e.screen.blit(s_timescale_bg, (0, h_last - s_timescale_bg.height))
+    e.screen.blit(
+        s_timescale_text,
+        (
+            (s_timescale_bg.width - s_timescale_text.width) / 2,
+            h_last - (s_timescale_bg.height + s_timescale_text.height) / 2,
+        ),
+    )
+
+
 def run_interactive_simulation[T: SimulationImpl](
     impl: T,
     renderer: SimulationRenderer[T],
@@ -90,14 +182,18 @@ def run_interactive_simulation[T: SimulationImpl](
     state_prev = impl.snapshot()
     state_next = state_prev
 
-    with _with_pygame(), closing(_Simulation(impl, 1, 2)) as simulation:
+    with (
+        _with_pygame(),
+        closing(_Simulation(impl, 1, 2)) as simulation,
+        importlib.resources.path(cb25d.ttf, "NotoSans.ttf") as p_font_ui,
+    ):
         screen = pygame.display.set_mode((1280, 720), pygame.DOUBLEBUF)
         clock = pygame.time.Clock()
         running = True
 
         t = state_prev.time
         dt = None
-        timescale = 1
+        timescale = Fraction(1)
         paused = True
 
         e = RenderEnvironment(
@@ -109,8 +205,10 @@ def run_interactive_simulation[T: SimulationImpl](
             mouse_left=pygame.mouse.get_pos()[1],
             mouse_top_rel=0,
             mouse_left_rel=0,
+            font_ui=pygame.freetype.Font(str(p_font_ui)),
         )
         e.recenter(center)
+        e.font_ui.kerning = True
 
         while running:
             for event in pygame.event.get():
@@ -136,9 +234,9 @@ def run_interactive_simulation[T: SimulationImpl](
                             case pygame.K_PERIOD:
                                 timescale *= 2
                             case pygame.K_SLASH:
-                                timescale = 1
+                                timescale = Fraction(1)
 
-            simulation.prerender_dt = timescale
+            simulation.prerender_dt = timescale * 1.0
 
             mouse_left, mouse_top = pygame.mouse.get_pos()
             e.mouse_left_rel, e.mouse_top_rel = (
@@ -170,8 +268,9 @@ def run_interactive_simulation[T: SimulationImpl](
             state_lerp = state_prev.interpolate(state_next, t_lerp)
 
             screen.fill("white")
-
+            _draw_grid(e)
             renderer.draw(e, state_lerp)
+            _draw_clock(e, t, timescale, paused)
 
             pygame.display.flip()
             dt = clock.tick() / 1000
