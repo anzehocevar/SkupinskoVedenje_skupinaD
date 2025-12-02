@@ -129,9 +129,10 @@ class SimulationImplOriginal:
 
         # Prepare for next kick
         self.t_last[i] = t
-        self.tau[i] = abs(
-            np.random.normal(loc=self.c_tau_n_mean, scale=self.c_tau_n_std)
-        )
+        # self.tau[i] = abs(
+        #     np.random.normal(loc=self.c_tau_n_mean, scale=self.c_tau_n_std)
+        # )
+        self.tau[i] = 0.5 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.uniform() + 1e-16))
 
         self.seed += 1
         self.time = t
@@ -185,7 +186,8 @@ def generate_initial_conditions(
         "u_y_last": u_y,
         "phi": phi,
         "t_last": np.zeros(n),
-        "tau": abs(np.random.normal(loc=tau_n_mean, scale=tau_n_std, size=n)),
+        # "tau": abs(np.random.normal(loc=tau_n_mean, scale=tau_n_std, size=n)),
+        "tau": 0.5 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.uniform(size=n) + 1e-16)),
     }
 
 
