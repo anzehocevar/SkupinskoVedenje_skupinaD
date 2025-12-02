@@ -20,11 +20,9 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
     phi: npt.NDArray
     N: int = src.constants.n_fish
     u_x_last, u_y_last, phi = initial_conditions(N)
-    # tau_min: npt.NDArray = np.repeat(src.constants.tau_n_min, N)
     t_last: npt.NDArray = np.zeros(N)
     # tau: npt.NDArray = np.abs(np.random.normal(loc=src.constants.tau_n_mean, scale=src.constants.tau_n_std, size=N))
     tau: npt.NDArray = 0.5 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.uniform(size=N) + 1e-16))
-    # t_next: npt.NDArray = t_last + np.max((tau_min, tau), axis=0)
     t_next: npt.NDArray = t_last + np.abs(tau)
 
     while True:

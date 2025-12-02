@@ -34,7 +34,6 @@ gamma_rand: float = 0.2
 # Kick duration and length
 tau_n_mean: float = 1.0
 tau_n_std: float = 1.0
-tau_n_min: float = 1e-3
 l_n_mean: float = 1.0
 
 # Relaxation time
