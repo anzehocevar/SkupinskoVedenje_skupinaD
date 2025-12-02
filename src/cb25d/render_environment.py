@@ -38,5 +38,5 @@ class RenderEnvironment:
 
     def recenter(self, center: tuple[float, float]):
         self.left, self.top = self.w2s(center)
-        self.left -= self.screen.width / 2 * self.scale
-        self.top -= self.screen.height / 2 * self.scale
+        self.left -= self.screen.get_width() / 2 * self.scale
+        self.top -= self.screen.get_height() / 2 * self.scale

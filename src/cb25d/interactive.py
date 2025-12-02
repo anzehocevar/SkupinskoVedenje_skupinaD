@@ -91,7 +91,7 @@ def _draw_grid(e: RenderEnvironment):
     fgcolor = (200, 200, 200)
 
     w_left, w_top = e.s2w((0, 0))
-    w_right, w_bottom = e.s2w(e.screen.size)
+    w_right, w_bottom = e.s2w(e.screen.get_size())
 
     log_scale = round(math.log10(max(w_right - w_left, w_bottom - w_top))) - 1
     log_scale_value = 10**log_scale
@@ -100,7 +100,7 @@ def _draw_grid(e: RenderEnvironment):
     w_left_now = math.ceil(w_left / log_scale_value) * log_scale_value
     while True:
         left_now = e.w2s((w_left_now, 0))[0]
-        pygame.draw.line(e.screen, fgcolor, (left_now, 0), (left_now, e.screen.height))
+        pygame.draw.line(e.screen, fgcolor, (left_now, 0), (left_now, e.screen.get_height()))
         s_mark_text, _ = e.font_ui.render(
             f"{w_left_now:0.{n_decimals}f}", fgcolor=fgcolor, size=size
         )
@@ -108,7 +108,7 @@ def _draw_grid(e: RenderEnvironment):
             s_mark_text,
             (
                 left_now + 2,
-                e.screen.height - s_mark_text.height - 1,
+                e.screen.get_height() - s_mark_text.get_height() - 1,
             ),
         )
         w_left_now_bkp = w_left_now
@@ -119,7 +119,7 @@ def _draw_grid(e: RenderEnvironment):
     w_top_now = math.ceil(w_top / log_scale_value) * log_scale_value
     while True:
         top_now = e.w2s((0, w_top_now))[1]
-        pygame.draw.line(e.screen, fgcolor, (0, top_now), (e.screen.width, top_now))
+        pygame.draw.line(e.screen, fgcolor, (0, top_now), (e.screen.get_width(), top_now))
         s_mark_text, _ = e.font_ui.render(
             f"{w_top_now:0.{n_decimals}f}", fgcolor=fgcolor, size=size
         )
@@ -137,21 +137,21 @@ def _draw_clock(e: RenderEnvironment, t: float, timescale: Fraction, paused: boo
     fgcolor = (255, 255, 255)
     bgcolor = (0, 0, 0, 200)
 
-    h_last = e.screen.height
+    h_last = e.screen.get_height()
 
     n_decimals = 2 + max(-2, round(-math.log10(timescale)))
     s_time_text, _ = e.font_ui.render(
         f"{t:0.{n_decimals}f}s", fgcolor=fgcolor, size=size
     )
-    s_time_bg = pygame.Surface((s_time_text.width + w_pad, line_height))
+    s_time_bg = pygame.Surface((s_time_text.get_width() + w_pad, line_height))
     s_time_bg.set_alpha(bgcolor[3])
     s_time_bg.fill(bgcolor)
-    e.screen.blit(s_time_bg, (0, h_last - s_time_bg.height))
+    e.screen.blit(s_time_bg, (0, h_last - s_time_bg.get_height()))
     e.screen.blit(
         s_time_text,
         (
-            (s_time_bg.width - s_time_text.width) / 2,
-            h_last - (s_time_bg.height + s_time_text.height) / 2,
+            (s_time_bg.get_width() - s_time_text.get_width()) / 2,
+            h_last - (s_time_bg.get_height() + s_time_text.get_height()) / 2,
         ),
     )
 
@@ -160,15 +160,15 @@ def _draw_clock(e: RenderEnvironment, t: float, timescale: Fraction, paused: boo
     s_timescale_text, _ = e.font_ui.render(
         f"{timescale}x{' (paused)' if paused else ''}", fgcolor=fgcolor, size=size
     )
-    s_timescale_bg = pygame.Surface((s_timescale_text.width + w_pad, line_height))
+    s_timescale_bg = pygame.Surface((s_timescale_text.get_width() + w_pad, line_height))
     s_timescale_bg.set_alpha(bgcolor[3])
     s_timescale_bg.fill(bgcolor)
-    e.screen.blit(s_timescale_bg, (0, h_last - s_timescale_bg.height))
+    e.screen.blit(s_timescale_bg, (0, h_last - s_timescale_bg.get_height()))
     e.screen.blit(
         s_timescale_text,
         (
-            (s_timescale_bg.width - s_timescale_text.width) / 2,
-            h_last - (s_timescale_bg.height + s_timescale_text.height) / 2,
+            (s_timescale_bg.get_width() - s_timescale_text.get_width()) / 2,
+            h_last - (s_timescale_bg.get_height() + s_timescale_text.get_height()) / 2,
         ),
     )
 
