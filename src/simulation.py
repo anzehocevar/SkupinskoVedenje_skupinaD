@@ -66,7 +66,10 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
         top_k_indexes: npt.NDArray = np.argpartition(influence, -src.constants.k)[-src.constants.k:]
 
         # Compute new heading
-        phi[i] = phi[i] + src.constants.gamma_rand * np.random.normal(loc=0, scale=1) + np.sum(delta_phi[top_k_indexes])
+        # phi[i] = phi[i] + src.constants.gamma_rand * np.random.normal(loc=0, scale=1) + np.sum(delta_phi[top_k_indexes])
+        phi[i] = phi[i] + src.constants.gamma_rand * (
+            np.sqrt(-2.0 * np.log(np.random.random()+1e-16)) * np.sin(2*np.pi*np.random.random())
+        ) + np.sum(delta_phi[top_k_indexes])
 
         # Prepare for next kick
         # tau_i: float = np.abs(np.random.normal(loc=src.constants.tau_n_mean, scale=src.constants.tau_n_std))

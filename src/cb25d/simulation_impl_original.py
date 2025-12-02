@@ -123,7 +123,8 @@ class SimulationImplOriginal:
         # Compute new heading
         self.phi[i] = (
             self.phi[i]
-            + self.c_gamma_rand * np.random.normal(loc=0, scale=1)
+            # + self.c_gamma_rand * np.random.normal(loc=0, scale=1)
+            + self.c_gamma_rand * np.sqrt(-2.0 * np.log(np.random.random()+1e-16)) * np.sin(2*np.pi*np.random.random())
             + np.sum(delta_phi[top_k_indexes])
         )
 
