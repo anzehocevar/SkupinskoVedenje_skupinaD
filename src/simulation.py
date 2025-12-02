@@ -35,7 +35,7 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
         s: npt.NDArray = t - t_last
 
         # Compute position of every fish at this time: u(t)
-        phi_unitvec_x, phi_unitvec_y = np.cos(phi[i]), np.sin(phi[i])
+        phi_unitvec_x, phi_unitvec_y = np.cos(phi), np.sin(phi)
         scale: npt.NDArray = tau * (
             (1-np.exp(-s/src.constants.tau_0)) /
             (1-np.exp(-tau/src.constants.tau_0))
@@ -73,8 +73,8 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
         tau[i] = tau_i
         t_last[i] = t
         t_next[i] = t + tau_i
-        u_x_last[i] = u_x_last[i] + phi_unitvec_x * l_i
-        u_y_last[i] = u_y_last[i] + phi_unitvec_y * l_i
+        u_x_last[i] = u_x_last[i] + phi_unitvec_x[i] * l_i
+        u_y_last[i] = u_y_last[i] + phi_unitvec_y[i] * l_i
         yield u_x, u_y, phi
 
 if __name__ == "__main__":
