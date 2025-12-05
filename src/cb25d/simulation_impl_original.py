@@ -62,8 +62,8 @@ class SimulationImplOriginal:
 
     time: float
     """Will always be at the beginning of a kick unless the state is an interpolation."""
-    seed: int
-    """Incremented on each step."""
+    rng: np.random.Generator
+    """Random number generator with state."""
     u_x_last: np.ndarray
     """The X coordinate of each fish at the beginning of its current kick."""
     u_y_last: np.ndarray
@@ -76,8 +76,6 @@ class SimulationImplOriginal:
     """Length and duration of each fish's kick."""
 
     def step(self) -> None:
-        np.random.seed(self.seed)
-
         # Find time and fish of next kick
         t_next = self.t_last + self.tau
         i = int(np.argmin(t_next))
@@ -123,19 +121,20 @@ class SimulationImplOriginal:
         # Compute new heading
         self.phi[i] = (
             self.phi[i]
-            # + self.c_gamma_rand * np.random.normal(loc=0, scale=1)
-            + self.c_gamma_rand * np.sqrt(-2.0 * np.log(np.random.random()+1e-16)) * np.sin(2*np.pi*np.random.random())
+            + self.c_gamma_rand
+            * np.sqrt(-2.0 * np.log(self.rng.random() + 1e-16))
+            * np.sin(2 * np.pi * self.rng.random())
             + np.sum(delta_phi[top_k_indexes])
         )
 
         # Prepare for next kick
         self.t_last[i] = t
-        # self.tau[i] = abs(
-        #     np.random.normal(loc=self.c_tau_n_mean, scale=self.c_tau_n_std)
-        # )
-        self.tau[i] = 0.5 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.uniform() + 1e-16))
+        self.tau[i] = (
+            0.5
+            * np.sqrt(2 / np.pi)
+            * np.sqrt(-2.0 * np.log(self.rng.uniform() + 1e-16))
+        )
 
-        self.seed += 1
         self.time = t
 
     def snapshot(self):
@@ -153,7 +152,7 @@ class _KwargsInitialConditions(TypedDict):
     c_tau_n_mean: float
     c_tau_n_std: float
     time: float
-    seed: int
+    rng: np.random.Generator
     u_x_last: np.ndarray
     u_y_last: np.ndarray
     phi: np.ndarray
@@ -169,26 +168,29 @@ def generate_initial_conditions(
     tau_n_mean: float,
     tau_n_std: float,
 ) -> _KwargsInitialConditions:
-    np.random.seed(seed)
+    rng = np.random.default_rng(seed)
     """Uniformly random placement of fish in circle with centre (0, 0) and radius R"""
     R: float = (l_att / 2.0) * np.sqrt(n / np.pi)
-    r = R * np.sqrt(np.random.rand(n))
-    angle = np.random.rand(n) * 2 * np.pi
+    r = R * np.sqrt(rng.random(n))
+    angle = rng.random(n) * 2 * np.pi
     u_x = r * np.cos(angle)
     u_y = r * np.sin(angle)
-    phi = np.random.rand(n) * 2 * np.pi
+    phi = rng.random(n) * 2 * np.pi
     return {
         "c_l_att": l_att,
         "c_tau_n_mean": tau_n_mean,
         "c_tau_n_std": tau_n_std,
         "time": 0,
-        "seed": seed + 1,
+        "rng": rng,
         "u_x_last": u_x,
         "u_y_last": u_y,
         "phi": phi,
         "t_last": np.zeros(n),
-        # "tau": abs(np.random.normal(loc=tau_n_mean, scale=tau_n_std, size=n)),
-        "tau": 0.5 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.uniform(size=n) + 1e-16)),
+        "tau": (
+            0.5
+            * np.sqrt(2 / np.pi)
+            * np.sqrt(-2.0 * np.log(rng.uniform(size=n) + 1e-16))
+        ),
     }
 
 
