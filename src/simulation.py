@@ -110,7 +110,7 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]]
     u_x_last, u_y_last, phi = initial_conditions(N)
     t_last: npt.NDArray = np.zeros(N)
     # tau: npt.NDArray = np.abs(np.random.normal(loc=src.constants.tau_n_mean, scale=src.constants.tau_n_std, size=N))
-    tau: npt.NDArray = 0.5 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.random(size=N) + 1e-16))
+    tau: npt.NDArray = 1.0 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.random(size=N) + 1e-16))
     t_next: npt.NDArray = t_last + np.abs(tau)
     d_ij: npt.NDArray = compute_pairwise_distances(u_x_last, u_y_last)
 
@@ -164,7 +164,7 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]]
 
         # Prepare for next kick
         # tau_i: float = np.abs(np.random.normal(loc=src.constants.tau_n_mean, scale=src.constants.tau_n_std))
-        tau_i: float = 0.5 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.random() + 1e-16))
+        tau_i: float = 1.0 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.random() + 1e-16))
         l_i: float = tau_i
         tau[i] = tau_i
         t_last[i] = t
