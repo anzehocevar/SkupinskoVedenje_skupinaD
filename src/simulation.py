@@ -13,6 +13,14 @@ def initial_conditions(N: int) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
     phi: npt.NDArray = np.random.rand(N) * 2 * np.pi
     return u_x, u_y, phi
 
+def wrap_to_pi(x: npt.NDArray) -> npt.NDArray:
+    x = np.where(x > +np.pi, x - 2*np.pi, x)
+    return np.where(x < -np.pi, x + 2*np.pi, x)
+
+def wrap_to_pi_single(x: float) -> float:
+    x = x - 2*np.pi if x > np.pi else x
+    return x + 2*np.pi if x < -np.pi else x
+
 def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
     np.random.seed(src.constants.seed)
     u_x_last: npt.NDArray
@@ -49,10 +57,13 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
         # Compute angle(s) of perception for fish i
         u_x_relative, u_y_relative = u_x - u_x_i, u_y - u_y_i
         theta: npt.NDArray = np.arctan2(u_y_relative, u_x_relative)
+        theta = wrap_to_pi(theta)
         psi: npt.NDArray = theta - phi
+        psi = wrap_to_pi(psi)
 
         # Compute relative headings
         phi_relative: npt.NDArray = phi - phi[i]
+        phi_relative = wrap_to_pi(phi_relative)
 
         # Compute the heading angle changes
         d_sq: npt.NDArray = np.square(d)
@@ -68,6 +79,7 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
         phi[i] = phi[i] + src.constants.gamma_rand * (
             np.sqrt(-2.0 * np.log(np.random.random()+1e-16)) * np.sin(2*np.pi*np.random.random())
         ) + np.sum(delta_phi[top_k_indexes])
+        phi[i] = wrap_to_pi_single(phi[i])
 
         # Prepare for next kick
         # tau_i: float = np.abs(np.random.normal(loc=src.constants.tau_n_mean, scale=src.constants.tau_n_std))
