@@ -32,6 +32,7 @@ def compute_pairwise_distances(u_x: npt.NDArray, u_y: npt.NDArray) -> npt.NDArra
 
 def run_with_groups() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]]:
     dist_critical: float = 4*src.constants.l_att
+    dist_merge: float = min(src.constants.l_att, src.constants.l_ali)
     for u_x, u_y, phi, d_ij in run():
         N: int = u_x.shape[0]
         nearest_neighbours_indexes: npt.NDArray = np.zeros((N, N-1)).astype(int)    # N-1 because we know every fish is nearest to itself
@@ -50,6 +51,10 @@ def run_with_groups() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, n
         # group = group[last_in_sequence]
         for i in range(N):
             group[i] = group[last_in_sequence[i]]
+        d_ij_merges: npt.NDArray = np.where(d_ij < dist_merge, 1, 0)
+        np.fill_diagonal(d_ij_merges, 0)
+        for i, j in np.argwhere(d_ij_merges):
+            group = np.where((group == group[i]) | (group == group[j]), min(group[i], group[j]), group)
         yield u_x, u_y, phi, group
 
 def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]]:
