@@ -34,7 +34,7 @@ def run_with_groups() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, n
     dist_critical: float = 4*src.constants.l_att
     for u_x, u_y, phi, d_ij in run():
         N: int = u_x.shape[0]
-        nearest_neighbours_indexes: npt.NDArray = np.zeros((N, N-1))    # N-1 because we know every fish is nearest to itself
+        nearest_neighbours_indexes: npt.NDArray = np.zeros((N, N-1)).astype(int)    # N-1 because we know every fish is nearest to itself
         for i in range(N):
             nearest_neighbours_indexes[i] = np.argsort(d_ij[i])[1:]
         group: npt.NDArray = np.arange(N)
