@@ -139,7 +139,7 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]]
         u_x_relative, u_y_relative = u_x - u_x_i, u_y - u_y_i
         theta: npt.NDArray = np.arctan2(u_y_relative, u_x_relative)
         theta = wrap_to_pi(theta)
-        psi: npt.NDArray = theta - phi
+        psi: npt.NDArray = theta - phi[i]
         psi = wrap_to_pi(psi)
 
         # Compute relative headings
