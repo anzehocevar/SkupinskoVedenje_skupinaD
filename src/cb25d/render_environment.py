@@ -24,10 +24,10 @@ class RenderEnvironment:
         return int(xy[0]), int(xy[1])
 
     def w2s(self, xy: tuple[float, float]) -> tuple[float, float]:
-        return (xy[0] - self.left) / self.scale, (xy[1] - self.top) / self.scale
+        return (xy[0] - self.left) / self.scale, (-xy[1] - self.top) / self.scale
 
     def s2w(self, xy: tuple[float, float]) -> tuple[float, float]:
-        return self.left + xy[0] * self.scale, self.top + xy[1] * self.scale
+        return self.left + xy[0] * self.scale, -(self.top + xy[1] * self.scale)
 
     def rescale(self, new_scale: float, center: tuple[float, float]):
         center_world = self.s2w(center)

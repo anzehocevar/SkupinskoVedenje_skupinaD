@@ -100,7 +100,9 @@ def _draw_grid(e: RenderEnvironment):
     w_left_now = math.ceil(w_left / log_scale_value) * log_scale_value
     while True:
         left_now = e.w2s((w_left_now, 0))[0]
-        pygame.draw.line(e.screen, fgcolor, (left_now, 0), (left_now, e.screen.get_height()))
+        pygame.draw.line(
+            e.screen, fgcolor, (left_now, 0), (left_now, e.screen.get_height())
+        )
         s_mark_text, _ = e.font_ui.render(
             f"{w_left_now:0.{n_decimals}f}", fgcolor=fgcolor, size=size
         )
@@ -119,14 +121,16 @@ def _draw_grid(e: RenderEnvironment):
     w_top_now = math.ceil(w_top / log_scale_value) * log_scale_value
     while True:
         top_now = e.w2s((0, w_top_now))[1]
-        pygame.draw.line(e.screen, fgcolor, (0, top_now), (e.screen.get_width(), top_now))
+        pygame.draw.line(
+            e.screen, fgcolor, (0, top_now), (e.screen.get_width(), top_now)
+        )
         s_mark_text, _ = e.font_ui.render(
             f"{w_top_now:0.{n_decimals}f}", fgcolor=fgcolor, size=size
         )
         e.screen.blit(s_mark_text, (1, top_now + 2))
         w_top_now_bkp = w_top_now
-        w_top_now += log_scale_value
-        if w_top_now == w_top_now_bkp or w_bottom <= w_top_now:
+        w_top_now -= log_scale_value
+        if w_top_now == w_top_now_bkp or w_bottom >= w_top_now:
             break
 
 
