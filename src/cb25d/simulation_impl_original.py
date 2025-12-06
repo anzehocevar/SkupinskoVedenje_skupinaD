@@ -136,7 +136,7 @@ class SimulationImplOriginal:
         # Compute angle(s) of perception for fish i
         u_x_relative, u_y_relative = u_x - u_x_i, u_y - u_y_i
         theta = np.arctan2(u_y_relative, u_x_relative)
-        psi = theta - self.phi
+        psi = theta - self.phi[i]
 
         # Compute relative headings
         phi_relative = self.phi - self.phi[i]
