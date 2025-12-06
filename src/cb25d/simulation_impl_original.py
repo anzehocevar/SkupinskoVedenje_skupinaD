@@ -1,6 +1,7 @@
 # pyright:strict
+from copy import copy
 from dataclasses import dataclass
-from typing import Any, Self, TypedDict
+from typing import Self, TypedDict
 
 import numpy as np
 import pygame
@@ -61,7 +62,7 @@ class SimulationImplOriginal:
 
     time: float
     """Will always be at the beginning of a kick unless the state is an interpolation."""
-    rng: np.random.Generator | dict[str, Any]
+    rng: np.random.Generator
     """Random number generator with state, or just saved RNG state."""
     u_x_last: np.ndarray
     """The X coordinate of each fish at the beginning of its current kick."""
@@ -74,15 +75,27 @@ class SimulationImplOriginal:
     tau: np.ndarray
     """Length and duration of each fish's kick."""
 
-    def _rng(self) -> np.random.Generator:
-        if isinstance(self.rng, dict):
-            rng = np.random.default_rng()
-            rng.bit_generator.state = self.rng
-            self.rng = rng
-        return self.rng
+    _dirty: bool = False
+    """If true, this state has been snapshotted and some its members are referenced in another state.
+    
+    In this case, safely updating the state requires copying the mutable members and resetting the _dirty flag.
+    """
+
+    def _undirty(self):
+        if not self._dirty:
+            return
+        bg = self.rng.bit_generator.__class__(0)
+        bg.state = self.rng.bit_generator.state
+        self.rng = np.random.Generator(bg)
+        self.u_x_last = np.copy(self.u_x_last)
+        self.u_y_last = np.copy(self.u_y_last)
+        self.phi = np.copy(self.phi)
+        self.t_last = np.copy(self.t_last)
+        self.tau = np.copy(self.tau)
+        self._dirty = False
 
     def step(self) -> None:
-        rng = self._rng()
+        self._undirty()
 
         # Find time and fish of next kick
         t_next = self.t_last + self.tau
@@ -129,27 +142,23 @@ class SimulationImplOriginal:
         # Compute new heading
         self.phi[i] = (
             self.phi[i]
-            + self.c_gamma_rand * rng.normal()
+            + self.c_gamma_rand * self.rng.normal()
             + np.sum(delta_phi[top_k_indexes])
         ) % (2 * np.pi)
 
         # Prepare for next kick
         self.t_last[i] = t
         self.tau[i] = (
-            0.5 * np.sqrt(2 / np.pi) * np.sqrt(-2.0 * np.log(rng.uniform() + 1e-16))
+            0.5
+            * np.sqrt(2 / np.pi)
+            * np.sqrt(-2.0 * np.log(self.rng.uniform() + 1e-16))
         )
 
         self.time = t
 
     def snapshot(self):
-        args = {k: getattr(self, k) for k in self.__slots__}
-        for k, v in args.items():
-            if isinstance(v, np.ndarray):
-                args[k] = np.copy(v)  # pyright: ignore[reportUnknownArgumentType]
-        args["rng"] = (
-            self.rng if isinstance(self.rng, dict) else self.rng.bit_generator.state
-        )
-        return SimulationImplOriginal(**args)
+        self._dirty = True
+        return copy(self)
 
     def interpolate(self, other: Self, t: float):
         ret = self.snapshot()
