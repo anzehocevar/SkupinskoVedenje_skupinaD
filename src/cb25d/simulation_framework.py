@@ -50,3 +50,10 @@ class SimulationRenderer[T: SimulationImpl](ABC):
 
     @abstractmethod
     def draw(self, e: RenderEnvironment, state: T) -> None: ...
+
+
+class SimulationRecorder[T: SimulationImpl](ABC):
+    """Records the statistics of a simulation."""
+
+    @abstractmethod
+    def record(self, state: T) -> None: ...

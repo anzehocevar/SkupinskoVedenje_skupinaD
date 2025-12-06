@@ -7,7 +7,7 @@ import numpy as np
 import pygame
 
 from cb25d.render_environment import RenderEnvironment
-from cb25d.simulation_framework import SimulationRenderer
+from cb25d.simulation_framework import SimulationRecorder, SimulationRenderer
 
 
 @dataclass(kw_only=True, slots=True)
@@ -254,3 +254,49 @@ class SimulationRendererOriginal(SimulationRenderer[SimulationImplOriginal]):
                 e.w2s((x + vx, y + vy)),
                 int(self.dir_width / e.scale),
             )
+
+
+@dataclass
+class SimulationRecorderOriginal(SimulationRecorder[SimulationImplOriginal]):
+    # Config
+    skip_first_n: int = 0
+
+    # Statistics
+    total_samples: int = 0
+    total_dispersion: float = 0
+    total_polarization: float = 0
+
+    def record(self, state: SimulationImplOriginal):
+        self.total_samples += 1
+        if self.total_samples <= self.skip_first_n:
+            return
+
+        u_x, u_y = state.compute_positions(state.time)
+        # v_x, v_y = state.compute_velocities(state.time)
+
+        # Barycenter positon and velocity
+        b_x, b_y = np.mean(u_x), np.mean(u_y)
+        # bv_x, bv_y = np.mean(v_x), np.mean(v_y)
+
+        # Statistics
+        self.total_dispersion += np.sqrt(np.mean((u_x - b_x) ** 2 + (u_y - b_y) ** 2))
+        self.total_polarization += (
+            np.sqrt(np.sum(np.cos(state.phi)) ** 2 + np.sum(np.sin(state.phi)) ** 2)
+            / state.phi.size
+        )
+
+    @property
+    def samples(self) -> float:
+        return self.total_samples - self.skip_first_n
+
+    @property
+    def results_available(self) -> bool:
+        return self.samples > 0
+
+    @property
+    def dispersion(self) -> float:
+        return self.total_dispersion / self.samples
+
+    @property
+    def polarization(self) -> float:
+        return self.total_polarization / self.samples
