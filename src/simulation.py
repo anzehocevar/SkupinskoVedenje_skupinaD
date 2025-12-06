@@ -21,6 +21,15 @@ def wrap_to_pi_single(x: float) -> float:
     x = x - 2*np.pi if x > np.pi else x
     return x + 2*np.pi if x < -np.pi else x
 
+def compute_pairwise_distances(u_x: npt.NDArray, u_y: npt.NDArray) -> npt.NDArray:
+    N: int = u_x.shape[0]
+    d_ij: npt.NDArray = np.zeros((N, N))
+    for i in range(N):
+        for j in range(i+1, N):
+            d_ij[i, j] = np.sqrt(np.square(u_x[i]-u_x[j]) + np.square(u_y[i]-u_y[j]))
+    d_ij = d_ij + d_ij.T
+    return d_ij
+
 def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
     np.random.seed(src.constants.seed)
     u_x_last: npt.NDArray
@@ -32,6 +41,7 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
     # tau: npt.NDArray = np.abs(np.random.normal(loc=src.constants.tau_n_mean, scale=src.constants.tau_n_std, size=N))
     tau: npt.NDArray = 0.5 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.uniform(size=N) + 1e-16))
     t_next: npt.NDArray = t_last + np.abs(tau)
+    d_ij: npt.NDArray = compute_pairwise_distances(u_x_last, u_y_last)
 
     while True:
         # Find time and fish of next kick
@@ -52,7 +62,9 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
 
         # Compute distances from fish i to all other fish
         u_x_i, u_y_i = u_x[i], u_y[i]
-        d: npt.NDArray = np.sqrt(np.square(u_x_i - u_x) + np.square(u_y_i - u_y))
+        d_i: npt.NDArray = np.sqrt(np.square(u_x_i - u_x) + np.square(u_y_i - u_y))
+        d_ij[i] = d_i
+        d_ij[:, i] = d_i
 
         # Compute angle(s) of perception for fish i
         u_x_relative, u_y_relative = u_x - u_x_i, u_y - u_y_i
@@ -66,10 +78,10 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
         phi_relative = wrap_to_pi(phi_relative)
 
         # Compute the heading angle changes
-        d_sq: npt.NDArray = np.square(d)
+        d_i_sq: npt.NDArray = np.square(d_i)
         delta_phi: npt.NDArray = (
-            src.constants.gamma_att * ((d * np.sin(psi)) / (1+d_sq/np.square(src.constants.l_att))) +
-            src.constants.gamma_ali * (1 + src.constants.eta * np.cos(psi)) * np.exp(-d_sq/np.square(src.constants.l_ali)) * np.sin(phi_relative)
+            src.constants.gamma_att * ((d_i * np.sin(psi)) / (1+d_i_sq/np.square(src.constants.l_att))) +
+            src.constants.gamma_ali * (1 + src.constants.eta * np.cos(psi)) * np.exp(-d_i_sq/np.square(src.constants.l_ali)) * np.sin(phi_relative)
         )
         influence: npt.NDArray = np.abs(delta_phi)
         top_k_indexes: npt.NDArray = np.argpartition(influence, -src.constants.k)[-src.constants.k:]
