@@ -94,6 +94,30 @@ class SimulationImplOriginal:
         self.tau = np.copy(self.tau)
         self._dirty = False
 
+    def compute_positions(self, t: float) -> tuple[np.ndarray, np.ndarray]:
+        t_since_last_kick = t - self.t_last
+        phi_unitvec_x, phi_unitvec_y = np.cos(self.phi), np.sin(self.phi)
+        scale = (
+            self.tau
+            * (1 - np.exp(-t_since_last_kick / self.c_tau_0))
+            / (1 - np.exp(-self.tau / self.c_tau_0))
+        )
+        u_x = self.u_x_last + scale * phi_unitvec_x
+        u_y = self.u_y_last + scale * phi_unitvec_y
+        return u_x, u_y
+
+    def compute_velocities(self, t: float) -> tuple[np.ndarray, np.ndarray]:
+        t_since_last_kick = t - self.t_last
+        phi_unitvec_x, phi_unitvec_y = np.cos(self.phi), np.sin(self.phi)
+        scale = (  # Partial derivative of position computation's scale with respect to t_since_last_kick
+            self.tau
+            * np.exp(-t_since_last_kick / self.c_tau_0)
+            / (self.c_tau_0 - self.c_tau_0 * np.exp(-self.tau / self.c_tau_0))
+        )
+        v_x = scale * phi_unitvec_x
+        v_y = scale * phi_unitvec_y
+        return v_x, v_y
+
     def step(self) -> None:
         self._undirty()
 
@@ -102,16 +126,8 @@ class SimulationImplOriginal:
         i = int(np.argmin(t_next))
         t = t_next[i]
 
-        # Compute time since all fish's last kicks
-        s = t - self.t_last
-
         # Compute position of every fish at this time: u(t)
-        phi_unitvec_x, phi_unitvec_y = np.cos(self.phi), np.sin(self.phi)
-        scale = self.tau * (
-            (1 - np.exp(-s / self.c_tau_0)) / (1 - np.exp(-self.tau / self.c_tau_0))
-        )
-        u_x = self.u_x_last + scale * phi_unitvec_x
-        u_y = self.u_y_last + scale * phi_unitvec_y
+        u_x, u_y = self.compute_positions(t)
 
         # Compute distances from fish i to all other fish
         u_x_i, u_y_i = u_x[i], u_y[i]
@@ -222,27 +238,19 @@ class SimulationRendererOriginal(SimulationRenderer[SimulationImplOriginal]):
     dir_color: tuple[int, int, int]
 
     def draw(self, e: RenderEnvironment, state: SimulationImplOriginal):
-        s = state.time - state.t_last
-        phi_unitvec_x, phi_unitvec_y = np.cos(state.phi), np.sin(state.phi)
-        scale = state.tau * (
-            (1 - np.exp(-s / state.c_tau_0)) / (1 - np.exp(-state.tau / state.c_tau_0))
-        )
-        u_x = state.u_x_last + scale * phi_unitvec_x
-        u_y = state.u_y_last + scale * phi_unitvec_y
-        for x, y, dx, dy in zip(
-            u_x,
-            u_y,
-            np.cos(state.phi),
-            np.sin(state.phi),
-        ):
-            dx, dy = self.dir_len * dx, self.dir_len * dy
+        u_x, u_y = state.compute_positions(state.time)
+        v_x, v_y = state.compute_velocities(state.time)
+        for x, y, vx, vy in zip(u_x, u_y, v_x, v_y):
             pygame.draw.circle(
-                e.screen, self.pos_color, e.w2s((x, y)), self.pos_size / e.scale
+                e.screen,
+                self.pos_color,
+                e.w2s((x, y)),
+                self.pos_size / e.scale,
             )
             pygame.draw.line(
                 e.screen,
                 self.dir_color,
                 e.w2s((x, y)),
-                e.w2s((x + dx, y + dy)),
+                e.w2s((x + vx, y + vy)),
                 int(self.dir_width / e.scale),
             )
