@@ -121,11 +121,9 @@ class SimulationImplOriginal:
         # Compute new heading
         self.phi[i] = (
             self.phi[i]
-            + self.c_gamma_rand
-            * np.sqrt(-2.0 * np.log(self.rng.random() + 1e-16))
-            * np.sin(2 * np.pi * self.rng.random())
+            + self.c_gamma_rand * self.rng.normal()
             + np.sum(delta_phi[top_k_indexes])
-        )
+        ) % (2 * np.pi)
 
         # Prepare for next kick
         self.t_last[i] = t
