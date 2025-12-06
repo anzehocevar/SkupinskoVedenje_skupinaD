@@ -40,7 +40,7 @@ def savefig(fig: Figure, path: Path | str):
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     with _with_source_date_epoch():
-        fig.savefig(p, bbox_inches=None)  # type: ignore
+        fig.savefig(p, bbox_inches="tight")  # type: ignore
 
 
 def init():
