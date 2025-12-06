@@ -1,7 +1,6 @@
 # pyright:strict
-from copy import deepcopy
 from dataclasses import dataclass
-from typing import Self, TypedDict
+from typing import Any, Self, TypedDict
 
 import numpy as np
 import pygame
@@ -62,8 +61,8 @@ class SimulationImplOriginal:
 
     time: float
     """Will always be at the beginning of a kick unless the state is an interpolation."""
-    rng: np.random.Generator
-    """Random number generator with state."""
+    rng: np.random.Generator | dict[str, Any]
+    """Random number generator with state, or just saved RNG state."""
     u_x_last: np.ndarray
     """The X coordinate of each fish at the beginning of its current kick."""
     u_y_last: np.ndarray
@@ -75,7 +74,16 @@ class SimulationImplOriginal:
     tau: np.ndarray
     """Length and duration of each fish's kick."""
 
+    def _rng(self) -> np.random.Generator:
+        if isinstance(self.rng, dict):
+            rng = np.random.default_rng()
+            rng.bit_generator.state = self.rng
+            self.rng = rng
+        return self.rng
+
     def step(self) -> None:
+        rng = self._rng()
+
         # Find time and fish of next kick
         t_next = self.t_last + self.tau
         i = int(np.argmin(t_next))
@@ -121,26 +129,30 @@ class SimulationImplOriginal:
         # Compute new heading
         self.phi[i] = (
             self.phi[i]
-            + self.c_gamma_rand * self.rng.normal()
+            + self.c_gamma_rand * rng.normal()
             + np.sum(delta_phi[top_k_indexes])
         ) % (2 * np.pi)
 
         # Prepare for next kick
         self.t_last[i] = t
         self.tau[i] = (
-            0.5
-            * np.sqrt(2 / np.pi)
-            * np.sqrt(-2.0 * np.log(self.rng.uniform() + 1e-16))
+            0.5 * np.sqrt(2 / np.pi) * np.sqrt(-2.0 * np.log(rng.uniform() + 1e-16))
         )
 
         self.time = t
 
     def snapshot(self):
-        # I should optimize this, but it's fast enough for debugging
-        return deepcopy(self)
+        args = {k: getattr(self, k) for k in self.__slots__}
+        for k, v in args.items():
+            if isinstance(v, np.ndarray):
+                args[k] = np.copy(v)  # pyright: ignore[reportUnknownArgumentType]
+        args["rng"] = (
+            self.rng if isinstance(self.rng, dict) else self.rng.bit_generator.state
+        )
+        return SimulationImplOriginal(**args)
 
     def interpolate(self, other: Self, t: float):
-        ret = deepcopy(self)
+        ret = self.snapshot()
         ret.time = (1 - t) * self.time + t * other.time
         return ret
 
