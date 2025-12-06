@@ -63,8 +63,6 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
         # Compute distances from fish i to all other fish
         u_x_i, u_y_i = u_x[i], u_y[i]
         d_i: npt.NDArray = np.sqrt(np.square(u_x_i - u_x) + np.square(u_y_i - u_y))
-        d_ij[i] = d_i
-        d_ij[:, i] = d_i
 
         # Compute angle(s) of perception for fish i
         u_x_relative, u_y_relative = u_x - u_x_i, u_y - u_y_i
@@ -100,8 +98,15 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]]:
         tau[i] = tau_i
         t_last[i] = t
         t_next[i] = t + tau_i
-        u_x_last[i] = u_x_last[i] + phi_unitvec_x[i] * l_i
-        u_y_last[i] = u_y_last[i] + phi_unitvec_y[i] * l_i
+        u_x_new = u_x_last[i] + phi_unitvec_x[i] * l_i
+        u_y_new = u_y_last[i] + phi_unitvec_y[i] * l_i
+        u_x_last[i], u_x[i] = u_x_new, u_x_new
+        u_y_last[i], u_y[i] = u_y_new, u_y_new
+
+        # Compute new distances from fish i to all other fish
+        d_i = np.sqrt(np.square(u_x_new - u_x) + np.square(u_y_new - u_y))
+        d_ij[i] = d_i
+        d_ij[:, i] = d_i
         yield u_x, u_y, phi
 
 if __name__ == "__main__":
