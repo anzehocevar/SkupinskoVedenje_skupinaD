@@ -20,7 +20,7 @@ def main():
     pygame.init()
     display: pygame.Surface = pygame.display.set_mode(DISPLAY_SIZE)
     clock: pygame.time.Clock = pygame.time.Clock()
-    simulation: Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray]] = src.simulation.run()
+    simulation: Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]] = src.simulation.run_with_groups()
     running: bool = True
     iter: int = 0
     paused: bool = True
@@ -42,7 +42,7 @@ def main():
             continue
 
         # Get positions and headings of next kick
-        u_x, u_y, phi = next(simulation)
+        u_x, u_y, phi, group = next(simulation)
 
         # Visualize state every ITERATIONS_BETWEEN_VISUAL_UPDATES kicks
         if iter % ITERATIONS_BETWEEN_VISUAL_UPDATES == 0:
