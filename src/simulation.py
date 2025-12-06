@@ -2,7 +2,9 @@ from typing import Iterator
 import numpy as np
 import numpy.typing as npt
 import src.constants
+from numba import njit
 
+@njit
 def initial_conditions(N: int) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
     """Uniformly random placement of fish in circle with centre (0, 0) and radius R"""
     R: float = (src.constants.l_att/2.0) * np.sqrt(N/np.pi)
@@ -13,14 +15,17 @@ def initial_conditions(N: int) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
     phi: npt.NDArray = np.random.rand(N) * 2 * np.pi
     return u_x, u_y, phi
 
+@njit
 def wrap_to_pi(x: npt.NDArray) -> npt.NDArray:
     x = np.where(x > +np.pi, x - 2*np.pi, x)
     return np.where(x < -np.pi, x + 2*np.pi, x)
 
+@njit
 def wrap_to_pi_single(x: float) -> float:
     x = x - 2*np.pi if x > np.pi else x
     return x + 2*np.pi if x < -np.pi else x
 
+@njit
 def compute_pairwise_distances(u_x: npt.NDArray, u_y: npt.NDArray) -> npt.NDArray:
     N: int = u_x.shape[0]
     d_ij: npt.NDArray = np.zeros((N, N))
@@ -30,12 +35,13 @@ def compute_pairwise_distances(u_x: npt.NDArray, u_y: npt.NDArray) -> npt.NDArra
     d_ij = d_ij + d_ij.T
     return d_ij
 
+@njit
 def run_with_groups() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]]:
     dist_critical: float = 4*src.constants.l_att
     dist_merge: float = min(src.constants.l_att, src.constants.l_ali)
     for u_x, u_y, phi, d_ij in run():
         N: int = u_x.shape[0]
-        nearest_neighbours_indexes: npt.NDArray = np.zeros((N, N-1)).astype(int)    # N-1 because we know every fish is nearest to itself
+        nearest_neighbours_indexes: npt.NDArray = np.zeros((N, N-1), dtype=np.int64)    # N-1 because we know every fish is nearest to itself
         for i in range(N):
             nearest_neighbours_indexes[i] = np.argsort(d_ij[i])[1:]
         group: npt.NDArray = np.arange(N)
@@ -52,36 +58,49 @@ def run_with_groups() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, n
         for i in range(N):
             group[i] = group[last_in_sequence[i]]
 
-        sets: list[set[int]] = []
-        index_to_set_index: dict[int, int] = {}
+        # sets: list[set[int]] = []
+        # index_to_set_index: dict[int, int] = {}
+        # for i in range(N):
+        #     for j in range(i+1, N):
+        #         if d_ij[i, j] < dist_merge:
+        #             ii, jj = i in index_to_set_index.keys(), j in index_to_set_index.keys()
+        #             if ii and jj:
+        #                 if (isi := index_to_set_index[i]) != (jsi := index_to_set_index[j]):
+        #                     sets[isi].update(sets[jsi])
+        #                     for j1 in sets[jsi]:
+        #                         index_to_set_index[j1] = isi
+        #                     sets[jsi].clear()
+        #             elif ii:
+        #                 sets[index_to_set_index[i]].add(j)
+        #                 index_to_set_index[j] = index_to_set_index[i]
+        #             elif jj:
+        #                 sets[index_to_set_index[j]].add(i)
+        #                 index_to_set_index[i] = index_to_set_index[j]
+        #             else:
+        #                 sets.append({i, j})
+        #                 index_to_set_index[i] = len(sets)-1
+        #                 index_to_set_index[j] = len(sets)-1
+        # min_elems = [min(s) if len(s) > 0 else None for s in sets]
+        # for k in range(N):
+        #     si = index_to_set_index.get(group[k], None)
+        #     if si is not None:
+        #         group[k] = min_elems[si]
+
         for i in range(N):
             for j in range(i+1, N):
                 if d_ij[i, j] < dist_merge:
-                    ii, jj = i in index_to_set_index.keys(), j in index_to_set_index.keys()
-                    if ii and jj:
-                        if (isi := index_to_set_index[i]) != (jsi := index_to_set_index[j]):
-                            sets[isi].update(sets[jsi])
-                            for j1 in sets[jsi]:
-                                index_to_set_index[j1] = isi
-                            sets[jsi].clear()
-                    elif ii:
-                        sets[index_to_set_index[i]].add(j)
-                        index_to_set_index[j] = index_to_set_index[i]
-                    elif jj:
-                        sets[index_to_set_index[j]].add(i)
-                        index_to_set_index[i] = index_to_set_index[j]
-                    else:
-                        sets.append({i, j})
-                        index_to_set_index[i] = len(sets)-1
-                        index_to_set_index[j] = len(sets)-1
-        min_elems = [min(s) if len(s) > 0 else None for s in sets]
-        for k in range(N):
-            si = index_to_set_index.get(group[k], None)
-            if si is not None:
-                group[k] = min_elems[si]
+                    newgroup: int = min(group[i], group[j])
+                    for k in range(N):
+                        if group[k] == group[i] or group[k] == group[j]:
+                            group[k] = newgroup
 
+        # d_ij_merges: npt.NDArray = np.where(d_ij < dist_merge, 1, 0)
+        # np.fill_diagonal(d_ij_merges, 0)
+        # for i, j in np.argwhere(d_ij_merges):
+        #     group = np.where((group == group[i]) | (group == group[j]), min(group[i], group[j]), group)
         yield u_x, u_y, phi, group
 
+@njit
 def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]]:
     np.random.seed(src.constants.seed)
     u_x_last: npt.NDArray
@@ -91,7 +110,7 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]]
     u_x_last, u_y_last, phi = initial_conditions(N)
     t_last: npt.NDArray = np.zeros(N)
     # tau: npt.NDArray = np.abs(np.random.normal(loc=src.constants.tau_n_mean, scale=src.constants.tau_n_std, size=N))
-    tau: npt.NDArray = 0.5 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.uniform(size=N) + 1e-16))
+    tau: npt.NDArray = 0.5 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.random(size=N) + 1e-16))
     t_next: npt.NDArray = t_last + np.abs(tau)
     d_ij: npt.NDArray = compute_pairwise_distances(u_x_last, u_y_last)
 
@@ -145,7 +164,7 @@ def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]]
 
         # Prepare for next kick
         # tau_i: float = np.abs(np.random.normal(loc=src.constants.tau_n_mean, scale=src.constants.tau_n_std))
-        tau_i: float = 0.5 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.uniform() + 1e-16))
+        tau_i: float = 0.5 * np.sqrt(2/np.pi) * np.sqrt(-2.0 * np.log(np.random.random() + 1e-16))
         l_i: float = tau_i
         tau[i] = tau_i
         t_last[i] = t
