@@ -13,7 +13,6 @@ from cb25d.simulation_framework import SimulationRecorder, SimulationRenderer
 @dataclass(kw_only=True, slots=True)
 class SimulationImplOriginal:
     # Constants
-
     c_eta: float
     """Coefficient of anisotropy."""
     c_gamma_ali: float
@@ -53,13 +52,8 @@ class SimulationImplOriginal:
     """
     c_tau_0: float
     """Relaxation time."""
-    c_tau_n_mean: float
-    """Kick duration and length (mean)."""
-    c_tau_n_std: float
-    """Kick duration and length (std)."""
 
     # Variables
-
     time: float
     """Will always be at the beginning of a kick unless the state is an interpolation."""
     rng: np.random.Generator
@@ -165,7 +159,7 @@ class SimulationImplOriginal:
         # Prepare for next kick
         self.t_last[i] = t
         self.tau[i] = (
-            0.5
+            1.0
             * np.sqrt(2 / np.pi)
             * np.sqrt(-2.0 * np.log(self.rng.uniform() + 1e-16))
         )
@@ -184,8 +178,6 @@ class SimulationImplOriginal:
 
 class _KwargsInitialConditions(TypedDict):
     c_l_att: float
-    c_tau_n_mean: float
-    c_tau_n_std: float
     time: float
     rng: np.random.Generator
     u_x_last: np.ndarray
@@ -200,8 +192,6 @@ def generate_initial_conditions(
     seed: int,
     n: int,
     l_att: float,
-    tau_n_mean: float,
-    tau_n_std: float,
 ) -> _KwargsInitialConditions:
     rng = np.random.default_rng(seed)
     """Uniformly random placement of fish in circle with centre (0, 0) and radius R"""
@@ -213,8 +203,6 @@ def generate_initial_conditions(
     phi = rng.random(n) * 2 * np.pi
     return {
         "c_l_att": l_att,
-        "c_tau_n_mean": tau_n_mean,
-        "c_tau_n_std": tau_n_std,
         "time": 0,
         "rng": rng,
         "u_x_last": u_x,
