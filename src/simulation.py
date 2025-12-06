@@ -51,10 +51,35 @@ def run_with_groups() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, n
         # group = group[last_in_sequence]
         for i in range(N):
             group[i] = group[last_in_sequence[i]]
-        d_ij_merges: npt.NDArray = np.where(d_ij < dist_merge, 1, 0)
-        np.fill_diagonal(d_ij_merges, 0)
-        for i, j in np.argwhere(d_ij_merges):
-            group = np.where((group == group[i]) | (group == group[j]), min(group[i], group[j]), group)
+
+        sets: list[set[int]] = []
+        index_to_set_index: dict[int, int] = {}
+        for i in range(N):
+            for j in range(i+1, N):
+                if d_ij[i, j] < dist_merge:
+                    ii, jj = i in index_to_set_index.keys(), j in index_to_set_index.keys()
+                    if ii and jj:
+                        if (isi := index_to_set_index[i]) != (jsi := index_to_set_index[j]):
+                            sets[isi].update(sets[jsi])
+                            for j1 in sets[jsi]:
+                                index_to_set_index[j1] = isi
+                            sets[jsi].clear()
+                    elif ii:
+                        sets[index_to_set_index[i]].add(j)
+                        index_to_set_index[j] = index_to_set_index[i]
+                    elif jj:
+                        sets[index_to_set_index[j]].add(i)
+                        index_to_set_index[i] = index_to_set_index[j]
+                    else:
+                        sets.append({i, j})
+                        index_to_set_index[i] = len(sets)-1
+                        index_to_set_index[j] = len(sets)-1
+        min_elems = [min(s) if len(s) > 0 else None for s in sets]
+        for k in range(N):
+            si = index_to_set_index.get(group[k], None)
+            if si is not None:
+                group[k] = min_elems[si]
+
         yield u_x, u_y, phi, group
 
 def run() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, npt.NDArray]]:
