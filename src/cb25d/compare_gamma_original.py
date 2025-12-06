@@ -27,7 +27,7 @@ type CreateInitialState = Callable[
 
 def _run_single_simulation(
     value: tuple[int, float, float, bytes, int],
-) -> tuple[float, float]:
+) -> tuple[float, float, float]:
     seed, att, ali, create_initial_state_b, steps_per_run = value
     create_initial_state = cast(
         CreateInitialState, cloudpickle.loads(create_initial_state_b)
@@ -37,7 +37,7 @@ def _run_single_simulation(
         rec := SimulationRecorderOriginal(skip_first_n=steps_per_run // 2),
         steps=steps_per_run,
     )
-    return rec.dispersion, rec.polarization
+    return rec.dispersion, rec.polarization, rec.milling
 
 
 def run_gamma_comparison_original(
@@ -51,11 +51,11 @@ def run_gamma_comparison_original(
 ):
     n_runs = len(att_vals) * len(ali_vals) * runs_per_config
     seed *= n_runs
-    statistics = np.zeros((len(att_vals), len(ali_vals), 2))
+    statistics = np.zeros((len(att_vals), len(ali_vals), 3))
     create_initial_state_b = cloudpickle.dumps(create_initial_state)  # pyright: ignore[reportUnknownMemberType]
     for stats, (i, j, _) in zip(
         cast(
-            list[tuple[float, float]],
+            list[tuple[float, float, float]],
             process_map(
                 _run_single_simulation,
                 [
@@ -67,6 +67,7 @@ def run_gamma_comparison_original(
                         for _ in range(runs_per_config)
                     )
                 ],
+                chunksize=10,
             ),
         ),
         product(range(len(att_vals)), range(len(ali_vals)), range(runs_per_config)),

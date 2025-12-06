@@ -265,6 +265,7 @@ class SimulationRecorderOriginal(SimulationRecorder[SimulationImplOriginal]):
     total_samples: int = 0
     total_dispersion: float = 0
     total_polarization: float = 0
+    total_milling: float = 0
 
     def record(self, state: SimulationImplOriginal):
         self.total_samples += 1
@@ -272,11 +273,14 @@ class SimulationRecorderOriginal(SimulationRecorder[SimulationImplOriginal]):
             return
 
         u_x, u_y = state.compute_positions(state.time)
-        # v_x, v_y = state.compute_velocities(state.time)
+        v_x, v_y = state.compute_velocities(state.time)
 
         # Barycenter positon and velocity
         b_x, b_y = np.mean(u_x), np.mean(u_y)
-        # bv_x, bv_y = np.mean(v_x), np.mean(v_y)
+        bv_x, bv_y = np.mean(v_x), np.mean(v_y)
+
+        relative_pos = np.atan2(u_y - b_y, u_x - b_x)
+        relative_heading = np.atan2(v_y - bv_y, v_x - bv_x)
 
         # Statistics
         self.total_dispersion += np.sqrt(np.mean((u_x - b_x) ** 2 + (u_y - b_y) ** 2))
@@ -284,6 +288,7 @@ class SimulationRecorderOriginal(SimulationRecorder[SimulationImplOriginal]):
             np.sqrt(np.sum(np.cos(state.phi)) ** 2 + np.sum(np.sin(state.phi)) ** 2)
             / state.phi.size
         )
+        self.total_milling += np.abs(np.mean(np.sin(relative_heading - relative_pos)))
 
     @property
     def samples(self) -> float:
@@ -300,3 +305,7 @@ class SimulationRecorderOriginal(SimulationRecorder[SimulationImplOriginal]):
     @property
     def polarization(self) -> float:
         return self.total_polarization / self.samples
+
+    @property
+    def milling(self) -> float:
+        return self.total_milling / self.samples
