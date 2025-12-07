@@ -387,12 +387,14 @@ class SimulationRendererOriginal(SimulationRenderer[SimulationImplOriginal]):
 class SimulationRecorderOriginal(SimulationRecorder[SimulationImplOriginal]):
     # Config
     skip_first_n: int = 0
+    use_groups: bool = False
 
     # Statistics
     total_samples: int = 0
     total_dispersion: float = 0
     total_polarization: float = 0
     total_milling: float = 0
+    n_groups: list[int] | None = None
 
     def record(self, state: SimulationImplOriginal):
         self.total_samples += 1
@@ -416,6 +418,12 @@ class SimulationRecorderOriginal(SimulationRecorder[SimulationImplOriginal]):
             / state.phi.size
         )
         self.total_milling += np.abs(np.mean(np.sin(relative_heading - relative_pos)))
+
+        if self.use_groups:
+            if not self.n_groups:
+                self.n_groups = []
+            groups: np.ndarray = np.unique(state.compute_groups())
+            self.n_groups.append(len(groups))
 
     @property
     def samples(self) -> float:
