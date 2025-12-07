@@ -24,6 +24,9 @@
 
 \newcommand{\num}[1]{#1}
 
+\usepackage{graphicx}
+\usepackage{subcaption}  % for subfigures
+
 % \graphicspath{{./fig/}}
 
 \title{Effects of burst-and-coast duty cycle on collective behavior in a fish school model}
@@ -87,7 +90,7 @@
 
 \input{introduction.tex}
 
-\subsection*{Related work}
+\subsection{Related work}
 
 \input{related_work.tex}
 
@@ -97,13 +100,18 @@
 
 \section*{Results}
 
-N/A
+\input{results.tex}
 
 \section*{Discussion}
 
-N/A
+\input{discussion.tex}
 
-\acknow{N/A}
+\acknow{
+    JA implemented the base model.
+    MP implemented the simulation framework.
+    AH implemented the extended model.
+    All authors contributed to the report.
+}
 \showacknow % Display the acknowledgments section
 
 % \pnasbreak splits and balances the columns before the references.
@@ -111,7 +119,7 @@ N/A
 % as it can run into problems with floats and footnotes on the final page.
 %\pnasbreak
 
-\newpage
+\vspace{10pt}
 \begin{multicols}{2}
 \section*{\bibname}
 % Bibliography

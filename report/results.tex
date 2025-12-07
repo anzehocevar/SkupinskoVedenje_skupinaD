@@ -1,0 +1,99 @@
+\subsection{Base model}
+
+Figure~\ref{fig:2d_maps} shows the results of the experiment we performed to verify the correctness of our base model.
+The values are nearly identical to those in the original paper, although our experiment was performed with a lower resolution in terms of attraction and alignment strength.
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=1.0\linewidth]{figures/combined.pdf}
+    \caption{Polarization (red), milling (blue) and dispersion (green) values for different combinations of attraction strength ($\gamma_{\mathrm{Att}}$), alignment strength ($\gamma_{\mathrm{Ali}}$) and number of neighbors that influence heading selection ($k$). Each value is an average of 20 runs with different seeds, with each run lasting $2000 \times N = 200000$ kicks. Metrics are only collected after $1000 \times N$ kicks to reduce the influence of initial conditions.}
+    \label{fig:2d_maps}
+\end{figure}
+
+% IMRAD
+% rezultati in metode ne smejo bit skup
+\subsection{Extended model}
+
+\subsubsection{Duty cycle}
+
+\begin{itemize}
+    \item Low $\omega$ ($ \leq 0.3$): These states have the lowest polarization and (almost) highest dispersion among the tested values, which is as expected. This comes from short bursts and long coasts, which provide fewer opportunities for coordinated group correction. The group is less cohesive and less aligned. 
+    \item High $\omega$ ($ \geq 0.7$): At high duty cycles, fish are swimming almost continuously. Our results show a dramatic decrease in group dispersion, which indicates that the school becomes much more compact and cohesive. Polarization also remains high.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \captionsetup[subfigure]{justification=centering}
+  \centering
+  \begin{subfigure}[b]{0.32\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/adv_wrong/dispersion_vs_omega.pdf}
+    \caption{Dispersion}
+    \label{fig:dispersionng_omega}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.32\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/adv_wrong/polarization_vs_omega.pdf}
+    \caption{Polarization}
+    \label{fig:polarization_omega}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.32\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/adv_wrong/milling_vs_omega.pdf}
+    \caption{Milling}
+    \label{fig:millingn_omega}
+  \end{subfigure}
+
+    \caption{Side-by-side comparison of dispersion, polarization and milling for different values of $\omega$.}
+  \label{fig:side_by_side_metrics_omega}
+\end{figure}
+
+Our current findings, shown in Figure~\ref{fig:side_by_side_metrics_omega}, reveal a complex relationship between duty cycle $\omega$ and collective behavior. Group polarization peaks around $\omega = 0.7$, suggesting that an optimal balance exists between active swimming and passive coasting for maintaining school alignment. However, group dispersion suddenly drops after $\omega = 0.7$, which would indicate that near-continuous swimming forces the agents into a much tighter formation. 
+
+\subsubsection{Number of decision steps}
+
+So far we have performed a parameter sweep with a fixed duty cycle $(\omega = 0.5)$ to investigate its effect on schooling stability.
+
+% \begin{equation*}
+%     \Delta\phi_{\text{step}} = \frac{\sum \delta\phi_{\text{social}}}{n_\omega} + \frac{\text{noise}}{\sqrt{n_\omega}}
+% \end{equation*}
+
+\begin{itemize}
+    \item $n_\omega = 1$: This represent a single burst, making the implementation discrete as opposed to continuous. The fish makes a single decision and commits to that heading for the entire burst. This prevents any corrective maneuvers that the agents would otherwise try to do. 
+    \item $n_\omega \geq 5$: This approximates a continuous, smooth turn. It allows agents to make multiple small adjustments within the burst itself, which should lead to a more stable and robust schooling. Our hypothesis was that increasing $n_\omega$ would increase group polarization and decrease dispersion, as it should allow the group to more effectively adjust to fluctuations and resist fragmentation within the school. 
+\end{itemize}
+
+\begin{figure}[htbp]
+  \captionsetup[subfigure]{justification=centering}
+  \centering
+  \begin{subfigure}[b]{0.32\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/adv_wrong/dispersion_vs_n_omega.pdf}
+    \caption{Dispersion}
+    \label{fig:dispersion_n_omega}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.32\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/adv_wrong/polarization_vs_n_omega.pdf}
+    \caption{Polarization}
+    \label{fig:polarizationn_omega}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}[b]{0.32\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/adv_wrong/milling_vs_n_omega.pdf}
+    \caption{Milling}
+    \label{fig:milling_n_omega}
+  \end{subfigure}
+
+  \caption{Side-by-side comparison of dispersion, polarization and milling for different values of $n_\omega$.}
+  \label{fig:side_by_side_metricsn_omega}
+\end{figure}
+
+Our current results (depicted in Figure~\ref{fig:side_by_side_metricsn_omega}) show a significant increase in school stability when moving from $n_\omega = 1$ to $n_\omega = 3$. At $n_\omega = 1$, the system is highly disordered as we can see that group polarization is at its minimum while group dispersion is at its highest, indicating that the school is fragmenting. This confirms that a single, uncorrected burst decision is insufficient to maintain a cohesive school, or at least makes it less stable. 
+
+Upon increasing the decision steps to $n_\omega = 3$, the school becomes more stable. We can observe that based on doubling in the polarization and dispersion dropping immensely. This strongly supports the idea that even a small number of corrective steps during a burst result in a more cohesive and aligned grouping. 
+
+However, we get a degradation in both polarization and dispersion, both of which improve when increasing the $n_\omega$ to 9.

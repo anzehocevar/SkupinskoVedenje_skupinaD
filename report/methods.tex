@@ -1,51 +1,41 @@
-We will first replicate the results of the original paper~\cite{Wang2025_fish},
-then extend the model by introducing parameters to model a non-zero duty cycle.
-We will then rerun the experiments with different values for the duty cycle and evaluate how it affects the collective behavior using objective metrics.
+We re-implemented the model from the original paper~\cite{Wang2025_fish} in Python.
+We then extended it with two additional parameters that model a non-zero duty cycle.
 
-\subsection*{Model Description}
+\subsection{Base model}
 
 The original burst–coast model consists of a repeated cycle:
 
 \begin{enumerate}
     \item \textbf{Heading selection:}
-    Before each burst, the fish computes a combination of attraction and alignment values based on selected neighbors.
+    Before each burst, the fish computes a new heading based on random noise, attraction and alignment to its $k=1$ or $k=2$ most influential neighbors.
     \item \textbf{Burst phase (kick):} The fish updates its heading and samples a random kick time and length.
-    \item \textbf{Coast phase:} The fish now moves along a straight path for the duration and length of its kick, with an exponentially velocity.
+    \item \textbf{Coast phase:} The fish now moves along a straight path for the duration and length of its kick, with an exponentially decreasing velocity.
     \item \textbf{Repeat:} Once the fish reaches the end of its coast phase, it immediately selects a new heading and begins a new burst.
 \end{enumerate}
 
-\subsection*{Proposed extension}
+\subsection{Extended model}
+The extended model introduces two key parameters: the duty cycle $\omega$ and the number of decision steps $n_\omega$. This transforms the motion from discrete jumps to continuous velocity integration, which is a more realistic representation of fish locomotion. 
 
-We will introduce two parameters to model a detailed duty cycle:
+\subsubsection{Duty cycle}
 
-\begin{itemize}
-    \item $\omega \in [0,1]$: The ratio between the duration of the burst phase and the total duration of both phases.
-    \item $n_\omega \in \mathbb{N}$: The amount of decision instants within the burst phase. Increasing this value will approximate a continuous decision making process within the burst phase.
-\end{itemize}
+When a new swimming cycle beings, its total duration $\tau$, is split into burst and a coast phase:
 
-In the initial model, $\omega = 0$ and $n_\omega = 1$.
-Instead of an immediate impulse at the start of a burst,
-a fish's velocity linearly increases for a duration determined by $\omega$.
-The acceleration is set so that the velocity at the end of a burst phase would be the same as the velocity at that time if $\omega$ were $0$ and the usual exponential delay was applied from the start.
-The burst phase is also evenly split into $n_\omega$ sub-phases, where the start of each sub-phase represents
-a decision point for the desired direction of the fish. Similarly to velocity between the start and the end of the entire burst phase, the heading of the fish is linearly interpolated between each sub-phase.
-This means that by increasing $n_\omega$, we can get a (biologically inaccurate) model that arbitrarily approximates a continuous motion model, which allows us to study the effects of a limited decision making process on collective behavior.
+\begin{align*}
+    \tau_{\text{burst}} &= \omega \cdot \tau \\
+    \tau_{\text{coast}} &= (1 - \omega) \cdot \tau
+\end{align*}
 
-\subsection*{Simulation Implementation}
+At low duty cycles ($\omega\approx0$), we expect the behavior of the extended model should resemble the behavior of the base model. At higher duty cycles, the velocity will not immediately begin to decrease when a new heading is selected.
 
-The simulation will be implemented in Python using:
+\subsubsection{Number of decision steps}
 
-\begin{itemize}
-    \item \textbf{NumPy} for array-based state storage,
-    \item \textbf{Numba} for the inner simulation loop,
-    \item \textbf{Matplotlib} for figures, and
-    \item \textbf{Pygame} or a similar library for real-time visualization.
-\end{itemize}
+The parameters $n_\omega$ controls the granularity of decision making during the burst phase. It dictates how many times a fish re-evaluates social forces and adjust it's direction within a single burst. 
 
-\subsection*{Evaluation Metrics}
+\subsection{Evaluation Metrics}
 
-The original model uses three metrics to evaluate its behavior.
-The first one is \textit{Group Dispersion}, representing the average square of distance from the barycenter (i.e., how much the fish are spread out in space).
+We use three metrics to evaluate collective behavior.
+These will also be used to compare our results with the original model.
+The first one is \textit{Group Dispersion}, representing the average square of distance from the barycenter (i.e. how much the fish are spread out in space).
 The second one is \textit{Group Polarization}, which is the measure of how varied the headings of different fish are.
 Lastly, the \textit{Milling Index} quantifies the degree of how much the fish are swimming around a barycenter in a circular fashion.
 We will use the exact same metrics as the original paper with the goal of producing comparable results:
@@ -69,7 +59,21 @@ M = \left| \frac{1}{N} \sum_{i=1}^N
    \sin{(\bar{\theta}_w^i(t))} 
 \right|.
 \]
-where $\bar{\theta}_w^i = \bar{\phi}_i-\bar{\theta}_i$ and $\bar{\phi}_i$ is the angle of the fish's heading and $\bar{\theta}_i$ is the angle of the fish's position, both with respect to the barycentre as the coordinate origin.
+where $\bar{\theta}_w^i = \bar{\phi}_i-\bar{\theta}_i$ and $\bar{\phi}_i$ is the angle of the fish's heading and $\bar{\theta}_i$ is the angle of the fish's position, both with respect to the barycenter as the coordinate origin.
 
 These metrics allow for classification of ordered schooling, milling, swarming, and disordered phases.
 
+\subsection{Experiments}
+
+We first verified that our implementation of the base model matches that of the original paper.
+We varied the attraction strength ($[0, 0.6]$, discrete step $0.05$) and alignment strength ($[0, 1.2]$, discrete step $0.1$), collecting the averages of all three key metrics over 20 simulations for each set of parameters.
+Each simulation had $N=100$ fish and stopped at $200000 = 2000 \times N$ kicks.
+We performed this experiment for both $k=1$ and $k=2$.
+
+To study the effects of the new duty cycle ($\omega$) and decision steps ($n_\omega$) parameters,
+we collected the three key metrics while varying $\omega$ and $n_\omega$.
+Attraction strength was set to $0.22$, alignment strength was set to $0.6$ and $k$ was set to $1$.
+We only performed one simulation for each set of parameters with $N=50$, stopping at $50000$ kicks.
+
+We performed one set of experiments with $\omega \in [0.1, 0.9]$ (discrete step $0.1$) and $n_\omega = 5$,
+and another with $\omega = 0.5$ and $n_\omega \in [1, 9]$ (discrete step $1$).

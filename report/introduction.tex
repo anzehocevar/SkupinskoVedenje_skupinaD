@@ -7,8 +7,8 @@ Instead, many species use burst-and-coast swimming~\cite{kramer2001behavioral}
 where movement is composed of two cyclical phases:
 the burst phase, during which the fish decides on a direction (based on the aforementioned social interactions) and rapidly accelerates towards it;
 and the coast phase, during which the fish passively glides and does not actively attempt to change its speed or heading outside of deceleration due to drag.
-The ratio between the duration of the burst phase and the total durations of the both phases is known as the duty cycle~\cite{chao2024turning}.
+The ratio between the duration of the burst phase and the total durations of both phases is known as the duty cycle~\cite{chao2024turning}.
 
-We build upon a paper~\cite{Wang2025_fish} which models the behavior of \textit{Hemigrammus rhodostomus} using agents that implement burst-and-coast swimming and analyzes the long-term collective behavior of large groups of such agents.
-In its implementation, the paper makes several simplifications, one of which is modeling the burst phase as an instantaneous event due to its short duration compared to the coast phase~\cite{calovi2018disentangling}, which is equivalent to a duty cycle of 0\%.
+We build upon a paper by Wang et al.~\cite{Wang2025_fish} which models the behavior of \textit{Hemigrammus rhodostomus} using agents that implement burst-and-coast swimming and analyzes the long-term collective behavior of large groups of such agents.
+One of the simplifications made by the model is to treat the burst phase as an instantaneous event due to its short duration compared to the coast phase~\cite{calovi2018disentangling}, which is equivalent to a duty cycle of 0\%.
 We will introduce additional parameters to model a non-zero duty cycle and study its effects on the collective behavior.

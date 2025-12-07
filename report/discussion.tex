@@ -1,0 +1,8 @@
+We have (re-)implemented a burst-and-coast model and extended it with both a simulation framework and a generalization of the duty cycle.
+The results we obtained are consistent with those of the original model (\cite{Wang2025_fish}, see Figure~\ref{fig:2d_maps}).
+We have also implemented tracking of groups, but we have yet to verify our results with the original.
+We plan to compare several plots: group dispersion and number of groups with respect to time, and the distribution of the number of groups at the end of several runs.
+
+The extended model has also been implemented but needs further validation and a more systematic analysis, as our preliminary results have revealed some unexplainable behavior and strange dynamics. Our initial parameter sweeps have shown that these extensions do have a profound impact on collective behavior, but we do need more plots and statistical backup to confirm our findings. 
+Our current results are based on singular, relatively short ($steps = 50000$) runs, which are highly susceptible to stochastic noise. 
+Therefore our immediate future work will focus on addressing these issue and limitations. First we need to reconfirm the results with our base implementation. Second, we need to do a comprehensive parameter sweep for both the extended parameters and find out how one impacts the other, while also averaging all metrics over multiple independent runs to obtain statistically meaningful results. This systematic approach will allow us to draw meaningful conclusions about the behavior of the extended model and its dynamics. 
