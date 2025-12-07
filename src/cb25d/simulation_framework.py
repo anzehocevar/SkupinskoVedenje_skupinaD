@@ -6,7 +6,6 @@ Defined separately to make things more readable.
 
 from abc import ABC, abstractmethod
 from typing import Protocol, Self
-import numpy as np
 
 from cb25d.render_environment import RenderEnvironment
 
@@ -45,38 +44,9 @@ class SimulationImpl(Protocol):
         """
         ...
 
-def generate_colorspace() -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    red: np.ndarray = np.zeros(6*255)
-    green: np.ndarray = np.zeros(6*255)
-    blue: np.ndarray = np.zeros(6*255)
-    offset: int = 0
-    for i in range(255):
-        red[i+offset], green[i+offset], blue[i+offset] = 0, 255, i
-    offset += 255
-    for i in range(255):
-        red[i+offset], green[i+offset], blue[i+offset] = 0, 255-i, 255
-    offset += 255
-    for i in range(255):
-        red[i+offset], green[i+offset], blue[i+offset] = i, 0, 255
-    offset += 255
-    for i in range(255):
-        red[i+offset], green[i+offset], blue[i+offset] = 255, 0, 255-i
-    offset += 255
-    for i in range(255):
-        red[i+offset], green[i+offset], blue[i+offset] = 255, i, 0
-    offset += 255
-    for i in range(255):
-        red[i+offset], green[i+offset], blue[i+offset] = 255-i, 255, 0
-    return red, green, blue
 
 class SimulationRenderer[T: SimulationImpl](ABC):
     """Renders the simulation inside a pygame window."""
-    red: np.ndarray
-    green: np.ndarray
-    blue: np.ndarray
-
-    def __post_init__(self) -> None:
-        self.red, self.green, self.blue = generate_colorspace()
 
     @abstractmethod
     def draw(self, e: RenderEnvironment, state: T) -> None: ...

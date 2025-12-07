@@ -1,8 +1,8 @@
 # pyright:strict
-from copy import copy
-from dataclasses import dataclass
-from typing import Self, TypedDict
 import itertools
+from copy import copy
+from dataclasses import dataclass, field
+from typing import Self, TypedDict
 
 import numpy as np
 import pygame
@@ -97,7 +97,6 @@ class SimulationImplOriginal:
         self.t_last = np.copy(self.t_last)
         self.tau = np.copy(self.tau)
         self.d_ij = np.copy(self.d_ij)
-        self.group = np.copy(self.group)
         self._dirty = False
 
     def compute_positions(self, t: float) -> tuple[np.ndarray, np.ndarray]:
@@ -126,7 +125,9 @@ class SimulationImplOriginal:
 
     def compute_groups(self) -> np.ndarray:
         n: int = self.u_x_last.shape[0]
-        nearest_neighbours_indexes: np.ndarray = np.zeros((n, n-1), dtype=np.int64)    # N-1 because we know every fish is nearest to itself
+        nearest_neighbours_indexes: np.ndarray = np.zeros(
+            (n, n - 1), dtype=np.int64
+        )  # N-1 because we know every fish is nearest to itself
         for i in range(n):
             nearest_neighbours_indexes[i] = np.argsort(self.d_ij[i])[1:]
         self.group = np.arange(n, dtype=np.int64)
@@ -146,11 +147,16 @@ class SimulationImplOriginal:
         sets: list[set[int]] = []
         index_to_set_index: dict[int, int] = {}
         for i in range(n):
-            for j in range(i+1, n):
+            for j in range(i + 1, n):
                 if self.d_ij[i, j] < self.c_dist_merge:
-                    ii, jj = i in index_to_set_index.keys(), j in index_to_set_index.keys()
+                    ii, jj = (
+                        i in index_to_set_index.keys(),
+                        j in index_to_set_index.keys(),
+                    )
                     if ii and jj:
-                        if (isi := index_to_set_index[i]) != (jsi := index_to_set_index[j]):
+                        if (isi := index_to_set_index[i]) != (
+                            jsi := index_to_set_index[j]
+                        ):
                             sets[isi].update(sets[jsi])
                             for j1 in sets[jsi]:
                                 index_to_set_index[j1] = isi
@@ -163,8 +169,8 @@ class SimulationImplOriginal:
                         index_to_set_index[i] = index_to_set_index[j]
                     else:
                         sets.append({i, j})
-                        index_to_set_index[i] = len(sets)-1
-                        index_to_set_index[j] = len(sets)-1
+                        index_to_set_index[i] = len(sets) - 1
+                        index_to_set_index[j] = len(sets) - 1
         min_elems = [min(s) if len(s) > 0 else None for s in sets]
         for k in range(n):
             si = index_to_set_index.get(self.group[k], None)
@@ -250,14 +256,18 @@ class _KwargsInitialConditions(TypedDict):
     d_ij: np.ndarray
     group: np.ndarray
 
+
 def compute_pairwise_distances(u_x: np.ndarray, u_y: np.ndarray) -> np.ndarray:
     N: int = u_x.shape[0]
     d_ij: np.ndarray = np.zeros((N, N))
     for i in range(N):
-        for j in range(i+1, N):
-            d_ij[i, j] = np.sqrt(np.square(u_x[i]-u_x[j]) + np.square(u_y[i]-u_y[j]))
+        for j in range(i + 1, N):
+            d_ij[i, j] = np.sqrt(
+                np.square(u_x[i] - u_x[j]) + np.square(u_y[i] - u_y[j])
+            )
     d_ij = d_ij + d_ij.T
     return d_ij
+
 
 def generate_initial_conditions(
     *,
@@ -301,6 +311,39 @@ class SimulationRendererOriginal(SimulationRenderer[SimulationImplOriginal]):
     use_groups: bool = False
     """Determines if we should compute what fish belongs to what group. Heavy performance hit."""
 
+    _red: np.ndarray = field(init=False)
+    _green: np.ndarray = field(init=False)
+    _blue: np.ndarray = field(init=False)
+
+    def __post_init__(self) -> None:
+        self._generate_colorspace()
+
+    def _generate_colorspace(self):
+        red = np.zeros(6 * 255)
+        green = np.zeros(6 * 255)
+        blue = np.zeros(6 * 255)
+        offset: int = 0
+        for i in range(255):
+            red[i + offset], green[i + offset], blue[i + offset] = 0, 255, i
+        offset += 255
+        for i in range(255):
+            red[i + offset], green[i + offset], blue[i + offset] = 0, 255 - i, 255
+        offset += 255
+        for i in range(255):
+            red[i + offset], green[i + offset], blue[i + offset] = i, 0, 255
+        offset += 255
+        for i in range(255):
+            red[i + offset], green[i + offset], blue[i + offset] = 255, 0, 255 - i
+        offset += 255
+        for i in range(255):
+            red[i + offset], green[i + offset], blue[i + offset] = 255, i, 0
+        offset += 255
+        for i in range(255):
+            red[i + offset], green[i + offset], blue[i + offset] = 255 - i, 255, 0
+        self._red = red
+        self._green = green
+        self._blue = blue
+
     def draw(self, e: RenderEnvironment, state: SimulationImplOriginal):
         scale = 1 if self.fixed_size else e.scale
         u_x, u_y = state.compute_positions(state.time)
@@ -308,11 +351,27 @@ class SimulationRendererOriginal(SimulationRenderer[SimulationImplOriginal]):
         if self.use_groups:
             state.compute_groups()
             groups: np.ndarray = np.unique(state.group)
-            index_colorspace: np.ndarray = np.linspace(0, 6*255, len(groups), endpoint=False).astype(int)
-            group_to_index: np.ndarray = np.array(np.full(groups.max()+1, -1))
+            index_colorspace: np.ndarray = np.linspace(
+                0, 6 * 255, len(groups), endpoint=False
+            ).astype(int)
+            group_to_index: np.ndarray = np.array(np.full(groups.max() + 1, -1))
             group_to_index[groups] = np.arange(len(groups))
-        for x, y, vx, vy, ix in zip(u_x, u_y, v_x, v_y, (group_to_index[state.group] if self.use_groups else itertools.repeat(0))):
-            color: tuple[int, int, int] = (self.red[index_colorspace[ix]], self.green[index_colorspace[ix]], self.blue[index_colorspace[ix]]) if self.use_groups else self.color
+        for x, y, vx, vy, ix in zip(
+            u_x,
+            u_y,
+            v_x,
+            v_y,
+            (group_to_index[state.group] if self.use_groups else itertools.repeat(0)),  # type: ignore
+        ):
+            color: tuple[int, int, int] = (  # type: ignore
+                (
+                    self._red[index_colorspace[ix]],  # type: ignore
+                    self._green[index_colorspace[ix]],  # type: ignore
+                    self._blue[index_colorspace[ix]],  # type: ignore
+                )
+                if self.use_groups
+                else self.color
+            )
             pygame.draw.circle(
                 e.screen,
                 color,
