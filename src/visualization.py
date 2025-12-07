@@ -80,7 +80,7 @@ def main():
                 offset_x, offset_y = DISPLAY_SIZE[0]//2, DISPLAY_SIZE[1]//2
                 dx, dy = LENGTH_DIRECTION*dx, LENGTH_DIRECTION*dy
                 x, y = x+offset_x, y+offset_y
-                color: tuple[int, int, int] = (red[index_colorspace[ix]], green[index_colorspace[ix]], blue[index_colorspace[ix]])
+                color: tuple[int, int, int] = (red[index_colorspace[ix]], green[index_colorspace[ix]], blue[index_colorspace[ix]])  # type: ignore
                 pygame.draw.circle(display, color, (x, y), SIZE_POSITION)
                 pygame.draw.line(display, color, (x, y), (x+dx, y+dy), WIDTH_DIRECTION)
             pygame.display.flip()
