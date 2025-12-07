@@ -226,11 +226,7 @@ class SimulationImplOriginal:
 
         # Prepare for next kick
         self.t_last[i] = t
-        self.tau[i] = (
-            1.0
-            * np.sqrt(2 / np.pi)
-            * np.sqrt(-2.0 * np.log(self.rng.uniform() + 1e-16))
-        )
+        self.tau[i] = self.rng.rayleigh(np.sqrt(2 / np.pi))
 
         self.time = t
 
