@@ -1,7 +1,9 @@
 import importlib.resources
 import math
 from contextlib import closing, contextmanager
+from datetime import UTC, datetime
 from fractions import Fraction
+from pathlib import Path
 from queue import SimpleQueue
 from threading import Event, Thread
 
@@ -109,8 +111,8 @@ def _draw_grid(e: RenderEnvironment):
         e.screen.blit(
             s_mark_text,
             (
-                left_now + 2,
-                e.screen.get_height() - s_mark_text.get_height() - 1,
+                left_now + 3,
+                e.screen.get_height() - s_mark_text.get_height() - 2,
             ),
         )
         w_left_now_bkp = w_left_now
@@ -127,7 +129,7 @@ def _draw_grid(e: RenderEnvironment):
         s_mark_text, _ = e.font_ui.render(
             f"{w_top_now:0.{n_decimals}f}", fgcolor=fgcolor, size=size
         )
-        e.screen.blit(s_mark_text, (1, top_now + 2))
+        e.screen.blit(s_mark_text, (2, top_now + 3))
         w_top_now_bkp = w_top_now
         w_top_now -= log_scale_value
         if w_top_now == w_top_now_bkp or w_bottom >= w_top_now:
@@ -191,14 +193,17 @@ def run_interactive_simulation[T: SimulationImpl](
         closing(_Simulation(impl, 1, 2)) as simulation,
         importlib.resources.path(cb25d.ttf, "NotoSans.ttf") as p_font_ui,
     ):
-        screen = pygame.display.set_mode((1280, 720), pygame.DOUBLEBUF)
+        screen = pygame.display.set_mode((1000, 1000), pygame.DOUBLEBUF)
         clock = pygame.time.Clock()
         running = True
 
         t = state_prev.time
         dt = None
         timescale = Fraction(1)
+
         paused = True
+        grid_enabled = True
+        osd_enabled = True
 
         e = RenderEnvironment(
             screen=screen,
@@ -239,6 +244,19 @@ def run_interactive_simulation[T: SimulationImpl](
                                 timescale *= 2
                             case pygame.K_SLASH:
                                 timescale = Fraction(1)
+                            case pygame.K_q:
+                                running = False
+                            case pygame.K_g:
+                                grid_enabled = not grid_enabled
+                            case pygame.K_o:
+                                osd_enabled = not osd_enabled
+                            case pygame.K_s:
+                                p = Path("fig/interactive")
+                                p.mkdir(parents=True, exist_ok=True)
+                                pygame.image.save(
+                                    screen,
+                                    p / f"{datetime.now(UTC):%Y-%m-%dT%H%M%S.%f}.png",
+                                )
 
             simulation.prerender_dt = timescale * 1.0
 
@@ -272,9 +290,11 @@ def run_interactive_simulation[T: SimulationImpl](
             state_lerp = state_prev.interpolate(state_next, t_lerp)
 
             screen.fill("white")
-            _draw_grid(e)
+            if grid_enabled:
+                _draw_grid(e)
             renderer.draw(e, state_lerp)
-            _draw_clock(e, t, timescale, paused)
+            if osd_enabled:
+                _draw_clock(e, t, timescale, paused)
 
             pygame.display.flip()
             dt = clock.tick() / 1000

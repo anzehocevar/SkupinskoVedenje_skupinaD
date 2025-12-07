@@ -219,28 +219,28 @@ def generate_initial_conditions(
 
 @dataclass
 class SimulationRendererOriginal(SimulationRenderer[SimulationImplOriginal]):
-    pos_size: float
-    pos_color: tuple[int, int, int]
-    dir_len: float
+    size: float
+    color: tuple[int, int, int]
     dir_width: float
-    dir_color: tuple[int, int, int]
+    fixed_size: bool = False
 
     def draw(self, e: RenderEnvironment, state: SimulationImplOriginal):
+        scale = 1 if self.fixed_size else e.scale
         u_x, u_y = state.compute_positions(state.time)
         v_x, v_y = state.compute_velocities(state.time)
         for x, y, vx, vy in zip(u_x, u_y, v_x, v_y):
             pygame.draw.circle(
                 e.screen,
-                self.pos_color,
+                self.color,
                 e.w2s((x, y)),
-                self.pos_size / e.scale,
+                self.size / scale,
             )
             pygame.draw.line(
                 e.screen,
-                self.dir_color,
+                self.color,
                 e.w2s((x, y)),
                 e.w2s((x + vx, y + vy)),
-                int(self.dir_width / e.scale),
+                int(self.dir_width / scale),
             )
 
 
