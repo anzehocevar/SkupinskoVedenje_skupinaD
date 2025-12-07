@@ -2,6 +2,7 @@
 from copy import copy
 from dataclasses import dataclass
 from typing import Self, TypedDict
+import itertools
 
 import numpy as np
 import pygame
@@ -297,18 +298,21 @@ class SimulationRendererOriginal(SimulationRenderer[SimulationImplOriginal]):
     color: tuple[int, int, int]
     dir_width: float
     fixed_size: bool = False
+    use_groups: bool = False
+    """Determines if we should compute what fish belongs to what group. Heavy performance hit."""
 
     def draw(self, e: RenderEnvironment, state: SimulationImplOriginal):
         scale = 1 if self.fixed_size else e.scale
         u_x, u_y = state.compute_positions(state.time)
         v_x, v_y = state.compute_velocities(state.time)
-        state.compute_groups()
-        groups: np.ndarray = np.unique(state.group)
-        index_colorspace: np.ndarray = np.linspace(0, 6*255, len(groups), endpoint=False).astype(int)
-        group_to_index: np.ndarray = np.array(np.full(groups.max()+1, -1))
-        group_to_index[groups] = np.arange(len(groups))
-        for x, y, vx, vy, ix in zip(u_x, u_y, v_x, v_y, group_to_index[state.group]):
-            color: tuple[int, int, int] = (self.red[index_colorspace[ix]], self.green[index_colorspace[ix]], self.blue[index_colorspace[ix]])
+        if self.use_groups:
+            state.compute_groups()
+            groups: np.ndarray = np.unique(state.group)
+            index_colorspace: np.ndarray = np.linspace(0, 6*255, len(groups), endpoint=False).astype(int)
+            group_to_index: np.ndarray = np.array(np.full(groups.max()+1, -1))
+            group_to_index[groups] = np.arange(len(groups))
+        for x, y, vx, vy, ix in zip(u_x, u_y, v_x, v_y, (group_to_index[state.group] if self.use_groups else itertools.repeat(0))):
+            color: tuple[int, int, int] = (self.red[index_colorspace[ix]], self.green[index_colorspace[ix]], self.blue[index_colorspace[ix]]) if self.use_groups else self.color
             pygame.draw.circle(
                 e.screen,
                 color,
