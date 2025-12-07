@@ -63,7 +63,10 @@ def run_gamma_comparison_original(
         )
     }
 
-    with ProcessPoolExecutor() as ppx, tqdm(total=len(futures)) as progress:
+    with (
+        ProcessPoolExecutor() as ppx,
+        tqdm(total=len(futures), smoothing=0) as progress,
+    ):
         futures = {ppx.submit(_run_single_simulation, k): v for k, v in futures.items()}
         for future in as_completed(futures):
             i, j = futures[future]
