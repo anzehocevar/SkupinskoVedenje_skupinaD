@@ -53,6 +53,11 @@ class SimulationImplOriginal:
     c_tau_0: float
     """Relaxation time."""
 
+    c_dist_critical: float
+    """Critical distance for grouping. Default: = 4*l_att."""
+    c_dist_merge: float
+    """Groups with fish, separated by distance less than this will be merged. Default: min(l_att, l_ali)."""
+
     # Variables
     time: float
     """Will always be at the beginning of a kick unless the state is an interpolation."""
@@ -68,6 +73,10 @@ class SimulationImplOriginal:
     """Absolute time of each fish's kick start."""
     tau: np.ndarray
     """Length and duration of each fish's kick."""
+    d_ij: np.ndarray
+    """Pairwise distances between all fish."""
+    group: np.ndarray
+    """Index of group that each fish belongs to."""
 
     _dirty: bool = False
     """If true, this state has been snapshotted and some its members are referenced in another state.
@@ -86,6 +95,8 @@ class SimulationImplOriginal:
         self.phi = np.copy(self.phi)
         self.t_last = np.copy(self.t_last)
         self.tau = np.copy(self.tau)
+        self.d_ij = np.copy(self.d_ij)
+        self.group = np.copy(self.group)
         self._dirty = False
 
     def compute_positions(self, t: float) -> tuple[np.ndarray, np.ndarray]:
@@ -112,6 +123,54 @@ class SimulationImplOriginal:
         v_y = scale * phi_unitvec_y
         return v_x, v_y
 
+    def compute_groups(self) -> np.ndarray:
+        n: int = self.u_x_last.shape[0]
+        nearest_neighbours_indexes: np.ndarray = np.zeros((n, n-1), dtype=np.int64)    # N-1 because we know every fish is nearest to itself
+        for i in range(n):
+            nearest_neighbours_indexes[i] = np.argsort(self.d_ij[i])[1:]
+        self.group = np.arange(n, dtype=np.int64)
+        last_in_sequence: np.ndarray = self.group.copy()
+        for i in range(n):
+            i1: int = i
+            i2: int = nearest_neighbours_indexes[i, 0]
+            if self.d_ij[i1, i2] <= self.c_dist_critical:
+                while nearest_neighbours_indexes[i2, 0] != i1:
+                    i1 = i2
+                    i2 = nearest_neighbours_indexes[i1, 0]
+                last_in_sequence[i] = min(i1, i2)
+        # group = group[last_in_sequence]
+        for i in range(n):
+            self.group[i] = self.group[last_in_sequence[i]]
+
+        sets: list[set[int]] = []
+        index_to_set_index: dict[int, int] = {}
+        for i in range(n):
+            for j in range(i+1, n):
+                if self.d_ij[i, j] < self.c_dist_merge:
+                    ii, jj = i in index_to_set_index.keys(), j in index_to_set_index.keys()
+                    if ii and jj:
+                        if (isi := index_to_set_index[i]) != (jsi := index_to_set_index[j]):
+                            sets[isi].update(sets[jsi])
+                            for j1 in sets[jsi]:
+                                index_to_set_index[j1] = isi
+                            sets[jsi].clear()
+                    elif ii:
+                        sets[index_to_set_index[i]].add(j)
+                        index_to_set_index[j] = index_to_set_index[i]
+                    elif jj:
+                        sets[index_to_set_index[j]].add(i)
+                        index_to_set_index[i] = index_to_set_index[j]
+                    else:
+                        sets.append({i, j})
+                        index_to_set_index[i] = len(sets)-1
+                        index_to_set_index[j] = len(sets)-1
+        min_elems = [min(s) if len(s) > 0 else None for s in sets]
+        for k in range(n):
+            si = index_to_set_index.get(self.group[k], None)
+            if si is not None:
+                self.group[k] = min_elems[si]
+        return self.group
+
     def step(self) -> None:
         self._undirty()
 
@@ -125,7 +184,9 @@ class SimulationImplOriginal:
 
         # Compute distances from fish i to all other fish
         u_x_i, u_y_i = u_x[i], u_y[i]
-        d = np.sqrt(np.square(u_x_i - u_x) + np.square(u_y_i - u_y))
+        d_i = np.sqrt(np.square(u_x_i - u_x) + np.square(u_y_i - u_y))
+        self.d_ij[i] = d_i
+        self.d_ij[:, i] = d_i
 
         # Compute angle(s) of perception for fish i
         u_x_relative, u_y_relative = u_x - u_x_i, u_y - u_y_i
@@ -136,11 +197,11 @@ class SimulationImplOriginal:
         phi_relative = self.phi - self.phi[i]
 
         # Compute the heading angle changes
-        d_sq = np.square(d)
+        d_i_sq = np.square(d_i)
         delta_phi = self.c_gamma_att * (
-            (d * np.sin(psi)) / (1 + d_sq / np.square(self.c_l_att))
+            (d_i * np.sin(psi)) / (1 + d_i_sq / np.square(self.c_l_att))
         ) + self.c_gamma_ali * (1 + self.c_eta * np.cos(psi)) * np.exp(
-            -d_sq / np.square(self.c_l_ali)
+            -d_i_sq / np.square(self.c_l_ali)
         ) * np.sin(phi_relative)
         influence = np.abs(delta_phi)
         top_k_indexes = np.argpartition(influence, -self.c_k)[-self.c_k :]
@@ -185,7 +246,17 @@ class _KwargsInitialConditions(TypedDict):
     phi: np.ndarray
     t_last: np.ndarray
     tau: np.ndarray
+    d_ij: np.ndarray
+    group: np.ndarray
 
+def compute_pairwise_distances(u_x: np.ndarray, u_y: np.ndarray) -> np.ndarray:
+    N: int = u_x.shape[0]
+    d_ij: np.ndarray = np.zeros((N, N))
+    for i in range(N):
+        for j in range(i+1, N):
+            d_ij[i, j] = np.sqrt(np.square(u_x[i]-u_x[j]) + np.square(u_y[i]-u_y[j]))
+    d_ij = d_ij + d_ij.T
+    return d_ij
 
 def generate_initial_conditions(
     *,
@@ -201,6 +272,7 @@ def generate_initial_conditions(
     u_x = r * np.cos(angle)
     u_y = r * np.sin(angle)
     phi = rng.random(n) * 2 * np.pi
+    d_ij = compute_pairwise_distances(u_x, u_y)
     return {
         "c_l_att": l_att,
         "time": 0,
@@ -214,6 +286,8 @@ def generate_initial_conditions(
             * np.sqrt(2 / np.pi)
             * np.sqrt(-2.0 * np.log(rng.uniform(size=n) + 1e-16))
         ),
+        "d_ij": d_ij,
+        "group": np.zeros(n, dtype=np.int64),
     }
 
 
@@ -228,16 +302,22 @@ class SimulationRendererOriginal(SimulationRenderer[SimulationImplOriginal]):
         scale = 1 if self.fixed_size else e.scale
         u_x, u_y = state.compute_positions(state.time)
         v_x, v_y = state.compute_velocities(state.time)
-        for x, y, vx, vy in zip(u_x, u_y, v_x, v_y):
+        state.compute_groups()
+        groups: np.ndarray = np.unique(state.group)
+        index_colorspace: np.ndarray = np.linspace(0, 6*255, len(groups), endpoint=False).astype(int)
+        group_to_index: np.ndarray = np.array(np.full(groups.max()+1, -1))
+        group_to_index[groups] = np.arange(len(groups))
+        for x, y, vx, vy, ix in zip(u_x, u_y, v_x, v_y, group_to_index[state.group]):
+            color: tuple[int, int, int] = (self.red[index_colorspace[ix]], self.green[index_colorspace[ix]], self.blue[index_colorspace[ix]])
             pygame.draw.circle(
                 e.screen,
-                self.color,
+                color,
                 e.w2s((x, y)),
                 self.size / scale,
             )
             pygame.draw.line(
                 e.screen,
-                self.color,
+                color,
                 e.w2s((x, y)),
                 e.w2s((x + vx, y + vy)),
                 int(self.dir_width / scale),
