@@ -520,6 +520,26 @@ class SimulationRecorderExtended(SimulationRecorder[SimulationImplExtended]):
         self.total_polarization += polarization
         self.total_milling += milling
 
+    @property
+    def samples(self) -> float:
+        return self.total_samples - self.skip_first_n
+
+    @property
+    def results_available(self) -> bool:
+        return self.samples > 0
+
+    @property
+    def dispersion(self) -> float:
+        return self.total_dispersion / self.samples
+
+    @property
+    def polarization(self) -> float:
+        return self.total_polarization / self.samples
+
+    @property
+    def milling(self) -> float:
+        return self.total_milling / self.samples
+
 
 
 @dataclass
