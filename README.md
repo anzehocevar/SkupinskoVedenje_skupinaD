@@ -13,9 +13,7 @@ For info about the codebase, see [README_DEV.md](./README_DEV.md).
 **Paper:** *Collective phases and long-term dynamics in a fish school model with burst-and-coast swimming*  
 **Authors:** Weijia Wang, Ramón Escobedo, Stéphane Sanchez, Zhangang Han, Clément Sire, and Guy Theraulaz  
 **Published:** 9 May 2025  
-**DOI:** <a href="https://doi.org/10.1098/rsos.240885" target="_blank" rel="noopener noreferrer">
-https://doi.org/10.1098/rsos.240885
-</a>
+**DOI:** <a href="https://doi.org/10.1098/rsos.240885" target="_blank" rel="noopener noreferrer">10.1098/rsos.240885</a>
 
 The paper presents a model in which fish alternate between burst and coast phases, adjusting their motion according to local interactions. The authors identify distinct collective phases and transitions depending on model parameters. This will serve as our baseline for replication and extension.
 
