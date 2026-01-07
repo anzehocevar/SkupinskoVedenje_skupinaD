@@ -44,3 +44,11 @@ eta: float = 0.8
 
 # Randomness seed
 seed: int = 123
+
+# new extension constants/parameters
+# The ratio between the duration of the burst phase and the total duration of both phases.
+omega: float = 0.2
+
+# The amount of decision instants within the burst phase. 
+# Increasing this value will approximate a continuous decision making process within the burst phase.
+n_omega: int = 5
