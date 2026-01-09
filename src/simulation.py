@@ -106,10 +106,10 @@ def run_with_groups() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, n
                 if d_ij[i, j] < dist_merge:
                     union(parent, i, j)
         group = np.array([find(parent, i) for i in range(N)])
-        groups_sorted = sort_by_frequency(group)
-        group_copy = group.copy()
+        groups_sorted: npt.NDArray = sort_by_frequency(group)
+        group_before: npt.NDArray = group.copy()
         for i, g in enumerate(groups_sorted):
-            group[group_copy == g] = i
+            group[group_before == g] = i
 
         # d_ij_merges: npt.NDArray = np.where(d_ij < dist_merge, 1, 0)
         # np.fill_diagonal(d_ij_merges, 0)

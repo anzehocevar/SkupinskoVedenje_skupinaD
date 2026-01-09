@@ -9,7 +9,7 @@ import pygame
 
 from cb25d.render_environment import RenderEnvironment
 from cb25d.simulation_framework import SimulationRecorder, SimulationRenderer
-from cb25d.unionfind import compress_all, union, find
+from cb25d.unionfind import compress_all, union, find, sort_by_frequency
 
 
 @dataclass(kw_only=True, slots=True)
@@ -208,6 +208,10 @@ class SimulationImplOriginal:
                 if self.d_ij[i, j] < self.c_dist_merge:
                     union(parent, i, j)
         self.group = np.array([find(parent, i) for i in range(n)])
+        groups_sorted: np.ndarray = sort_by_frequency(self.group)
+        group_before = self.group.copy()
+        for i, g in enumerate(groups_sorted):
+            self.group[group_before == g] = i
         return self.group
 
     def step(self) -> None:
