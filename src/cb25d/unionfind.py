@@ -1,14 +1,5 @@
-# class UnionFind():
-#     representatives: list[int]
-#     def __init__(self, N: int) -> None:
-#         self.representatives = list(range(N))
-#     def find_representative(self, i: int) -> int:
-#         parent: int = self.representatives[i]
-#         if parent == i:
-#             return i
-#         return self.find_representative(self.representatives[i])
-
 from numba import njit
+import numpy as np
 import numpy.typing as npt
 
 @njit
@@ -40,3 +31,25 @@ def union(representatives: npt.NDArray, i: int, j: int):
 def compress_all(representatives: npt.NDArray):
     for i in range(representatives.shape[0]):
         representatives[i] = find(representatives, i)
+
+@njit
+def sort_by_frequency(group):
+    uniques: list[int] = []
+    for x in group:
+        if x not in uniques:
+            uniques.append(x)
+
+    counts: npt.NDArray = np.zeros(max(uniques)+1, dtype=np.int64)
+    for x in group:
+        counts[x] += 1
+    if np.all(counts == 0):
+        return np.empty(0, dtype=np.int64)
+
+    order: npt.NDArray = np.argsort(counts)
+    first_non_zero: int = 0
+    while counts[order[first_non_zero]] < 1:
+        first_non_zero += 1
+    order = order[first_non_zero:]
+    order = order[::-1]
+
+    return order

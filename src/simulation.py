@@ -3,7 +3,7 @@ import numpy as np
 import numpy.typing as npt
 import src.constants
 from numba import njit
-from unionfind import find, union, compress_all
+from src.cb25d.unionfind import find, union, compress_all, sort_by_frequency
 
 @njit
 def initial_conditions(N: int) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
@@ -106,6 +106,10 @@ def run_with_groups() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, n
                 if d_ij[i, j] < dist_merge:
                     union(parent, i, j)
         group = np.array([find(parent, i) for i in range(N)])
+        groups_sorted = sort_by_frequency(group)
+        group_copy = group.copy()
+        for i, g in enumerate(groups_sorted):
+            group[group_copy == g] = i
 
         # d_ij_merges: npt.NDArray = np.where(d_ij < dist_merge, 1, 0)
         # np.fill_diagonal(d_ij_merges, 0)
