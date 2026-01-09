@@ -1,3 +1,4 @@
+# pyright:strict
 import itertools
 from copy import copy
 from dataclasses import dataclass, field
@@ -104,10 +105,6 @@ class SimulationImplExtended:
             v0 * t_burst + v0 * self.c_tau_0 * (1 - np.exp(-(dt - t_burst) / self.c_tau_0))
         )
         return disp
-    
-    def _burst_step_dt(self) -> np.ndarray:
-        """Duration of one decision step during the burst phase."""
-        return (self.c_omega * self.tau) / self.c_n_omega
 
     def compute_positions(self, t: float) -> tuple[np.ndarray, np.ndarray]:
         v0 = self._get_v0()
@@ -193,64 +190,58 @@ class SimulationImplExtended:
     def step(self) -> None:
         self._undirty()
 
-        burst_step = self._burst_step_dt()
-        t_next = self.t_last + burst_step
-
+        # Each cycle of duration tau is split into n_omega decision steps
+        t_next = self.t_last + (self.tau / self.c_n_omega)
         i = int(np.argmin(t_next))
         t = t_next[i]
 
-        dt = t - self.t_cycle_start[i]
-        t_burst = self.c_omega * self.tau[i]
-
-        # End of burst → start new cycle
-        if dt > t_burst:
-            self.step_count[i] = 0
-            self.t_cycle_start[i] += self.tau[i]
-            self.tau[i] = self.rng.rayleigh(np.sqrt(2 / np.pi))
-            self.t_last[i] = self.t_cycle_start[i]
-            self.time = self.t_cycle_start[i]
-            return
-
-        # Normal burst step
         u_x, u_y = self.compute_positions(t)
 
         u_x_i, u_y_i = u_x[i], u_y[i]
-        d_i = np.sqrt((u_x_i - u_x)**2 + (u_y_i - u_y)**2)
+        d_i = np.sqrt(np.square(u_x_i - u_x) + np.square(u_y_i - u_y))
         self.d_ij[i] = d_i
         self.d_ij[:, i] = d_i
 
-        u_x_rel, u_y_rel = u_x - u_x_i, u_y - u_y_i
-        theta = np.arctan2(u_y_rel, u_x_rel)
+        u_x_relative, u_y_relative = u_x - u_x_i, u_y - u_y_i
+        theta = np.arctan2(u_y_relative, u_x_relative)
         psi = theta - self.phi[i]
-        phi_rel = self.phi - self.phi[i]
+        phi_relative = self.phi - self.phi[i]
 
-        d_i_sq = d_i**2
-        delta_phi = (
-            self.c_gamma_att * (d_i * np.sin(psi)) / (1 + d_i_sq / self.c_l_att**2)
-            + self.c_gamma_ali
-            * (1 + self.c_eta * np.cos(psi))
-            * np.exp(-d_i_sq / self.c_l_ali**2)
-            * np.sin(phi_rel)
-        )
+        d_i_sq = np.square(d_i)
+        delta_phi = self.c_gamma_att * (
+            (d_i * np.sin(psi)) / (1 + d_i_sq / np.square(self.c_l_att))
+        ) + self.c_gamma_ali * (1 + self.c_eta * np.cos(psi)) * np.exp(
+            -d_i_sq / np.square(self.c_l_ali)
+        ) * np.sin(phi_relative)
+        
+        influence = np.abs(delta_phi)
+        top_k_indexes = np.argpartition(influence, -self.c_k)[-self.c_k :]
 
-        top_k = np.argpartition(np.abs(delta_phi), -self.c_k)[-self.c_k:]
-
+        # Update position at the start of this decision step
         self.u_x_last[i] = u_x[i]
         self.u_y_last[i] = u_y[i]
 
+        # Compute new heading
         self.phi[i] = (
             self.phi[i]
             + self.c_gamma_rand * self.rng.normal()
-            + np.sum(delta_phi[top_k])
+            + np.sum(delta_phi[top_k_indexes])
         ) % (2 * np.pi)
 
         self.t_last[i] = t
         self.step_count[i] += 1
+        
+        # If we finished all n_omega steps, start a new cycle
+        if self.step_count[i] >= self.c_n_omega:
+            self.step_count[i] = 0
+            self.t_cycle_start[i] = t
+            self.tau[i] = self.rng.rayleigh(np.sqrt(2 / np.pi))
+
         self.time = t
 
-        def snapshot(self):
-            self._dirty = True
-            return copy(self)
+    def snapshot(self):
+        self._dirty = True
+        return copy(self)
 
     def interpolate(self, other: Self, t: float):
         ret = self.snapshot()
