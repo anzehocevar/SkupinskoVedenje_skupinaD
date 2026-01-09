@@ -33,15 +33,15 @@ def run_n_groups_original(
 
     seed *= len(emergences) * runs_per_config
     statistics: dict[str, np.ndarray] = {
-        "Swarming": np.zeros(steps_per_run - (steps_per_run//2)),
-        "Schooling": np.zeros(steps_per_run - (steps_per_run//2)),
-        "Milling": np.zeros(steps_per_run - (steps_per_run//2)),
+        "Swarming": np.zeros(steps_per_run),
+        "Schooling": np.zeros(steps_per_run),
+        "Milling": np.zeros(steps_per_run),
     }
 
     def run(seed: int, att: float, ali: float):
         run_batch_simulation(
             create_initial_state(att, ali, seed),
-            rec := SimulationRecorderOriginal(skip_first_n=steps_per_run // 2, use_groups=True),
+            rec := SimulationRecorderOriginal(skip_first_n=0, use_groups=True),
             steps=steps_per_run,
         )
         return rec.n_groups
@@ -88,7 +88,7 @@ if __name__ == "__main__":
                     l_att=3,
                 ),
             ),
-            runs_per_config=100,
+            runs_per_config=1000,
             steps_per_run=40000 * 100,
         )
         p_base = Path("results/original/gamma")
