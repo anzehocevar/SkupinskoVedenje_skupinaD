@@ -3,6 +3,7 @@ import numpy as np
 import numpy.typing as npt
 import src.constants
 from numba import njit
+from src.cb25d.unionfind import find, union, compress_all, sort_by_frequency
 
 @njit
 def initial_conditions(N: int) -> tuple[npt.NDArray, npt.NDArray, npt.NDArray]:
@@ -45,18 +46,22 @@ def run_with_groups() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, n
         for i in range(N):
             nearest_neighbours_indexes[i] = np.argsort(d_ij[i])[1:]
         group: npt.NDArray = np.arange(N)
-        last_in_sequence: npt.NDArray = group.copy()
+        last_in_sequence: npt.NDArray = np.full(N, -1, dtype=np.int64)
         for i in range(N):
+            if last_in_sequence[i] >= 0:
+                continue
             i1: int = i
             i2: int = nearest_neighbours_indexes[i, 0]
             if d_ij[i1, i2] <= dist_critical:
+                path: list[int] = [i1, i2]
                 while nearest_neighbours_indexes[i2, 0] != i1:
                     i1 = i2
                     i2 = nearest_neighbours_indexes[i1, 0]
-                last_in_sequence[i] = min(i1, i2)
+                    path.append(i2)
+                last_in_sequence[np.array(path)] = min(i1, i2)
         # group = group[last_in_sequence]
-        for i in range(N):
-            group[i] = group[last_in_sequence[i]]
+        # for i in range(N):
+        #     group[i] = group[last_in_sequence[i]]
 
         # sets: list[set[int]] = []
         # index_to_set_index: dict[int, int] = {}
@@ -86,13 +91,25 @@ def run_with_groups() -> Iterator[tuple[npt.NDArray, npt.NDArray, npt.NDArray, n
         #     if si is not None:
         #         group[k] = min_elems[si]
 
+        # for i in range(N):
+        #     for j in range(i+1, N):
+        #         if d_ij[i, j] < dist_merge:
+        #             newgroup: int = min(group[i], group[j])
+        #             for k in range(N):
+        #                 if group[k] == group[i] or group[k] == group[j]:
+        #                     group[k] = newgroup
+
+        parent: npt.NDArray = last_in_sequence
+        compress_all(parent)
         for i in range(N):
             for j in range(i+1, N):
                 if d_ij[i, j] < dist_merge:
-                    newgroup: int = min(group[i], group[j])
-                    for k in range(N):
-                        if group[k] == group[i] or group[k] == group[j]:
-                            group[k] = newgroup
+                    union(parent, i, j)
+        group = np.array([find(parent, i) for i in range(N)])
+        groups_sorted: npt.NDArray = sort_by_frequency(group)
+        group_before: npt.NDArray = group.copy()
+        for i, g in enumerate(groups_sorted):
+            group[group_before == g] = i
 
         # d_ij_merges: npt.NDArray = np.where(d_ij < dist_merge, 1, 0)
         # np.fill_diagonal(d_ij_merges, 0)

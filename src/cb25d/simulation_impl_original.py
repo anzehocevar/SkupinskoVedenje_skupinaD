@@ -9,6 +9,7 @@ import pygame
 
 from cb25d.render_environment import RenderEnvironment
 from cb25d.simulation_framework import SimulationRecorder, SimulationRenderer
+from cb25d.unionfind import compress_all, union, find, sort_by_frequency
 
 
 @dataclass(kw_only=True, slots=True)
@@ -59,6 +60,9 @@ class SimulationImplOriginal:
     c_dist_merge: float
     """Groups with fish, separated by distance less than this will be merged. Default: min(l_att, l_ali)."""
 
+    group_every_n_steps: int
+    """If positive, groups will be computed every n steps. If <= 0, groups won't be computed."""
+
     # Variables
     time: float
     """Will always be at the beginning of a kick unless the state is an interpolation."""
@@ -78,6 +82,8 @@ class SimulationImplOriginal:
     """Pairwise distances between all fish."""
     group: np.ndarray
     """Index of group that each fish belongs to."""
+    steps: int
+    """Number of steps that have been made."""
 
     _dirty: bool = False
     """If true, this state has been snapshotted and some its members are referenced in another state.
@@ -123,7 +129,7 @@ class SimulationImplOriginal:
         v_y = scale * phi_unitvec_y
         return v_x, v_y
 
-    def compute_groups(self) -> np.ndarray:
+    def compute_groups_old(self) -> np.ndarray:
         n: int = self.u_x_last.shape[0]
         nearest_neighbours_indexes: np.ndarray = np.zeros(
             (n, n - 1), dtype=np.int64
@@ -178,6 +184,48 @@ class SimulationImplOriginal:
                 self.group[k] = min_elems[si]
         return self.group
 
+    def compute_groups(self) -> np.ndarray:
+        n: int = self.u_x_last.shape[0]
+        nearest_neighbours_indexes: np.ndarray = np.zeros(
+            (n, n - 1), dtype=np.int64
+        )  # N-1 because we know every fish is nearest to itself
+        for i in range(n):
+            nearest_neighbours_indexes[i] = np.argsort(self.d_ij[i])[1:]
+        self.group = np.arange(n, dtype=np.int64)
+        last_in_sequence: np.ndarray = np.full(n, -1, dtype=np.int64)
+        for i in range(n):
+            if last_in_sequence[i] >= 0:
+                continue
+            i1: int = i
+            i2: int = nearest_neighbours_indexes[i, 0]
+            if self.d_ij[i1, i2] <= self.c_dist_critical:
+                path: list[int] = [i1, i2]
+                while nearest_neighbours_indexes[i2, 0] != i1:
+                    i1 = i2
+                    i2 = nearest_neighbours_indexes[i1, 0]
+                    path.append(i2)
+                last_in_sequence[np.array(path)] = min(i1, i2)
+
+        parent: np.ndarray = last_in_sequence
+        compress_all(parent)
+        for i in range(n):
+            for j in range(i+1, n):
+                if self.d_ij[i, j] < self.c_dist_merge:
+                    union(parent, i, j)
+        self.group = np.array([find(parent, i) for i in range(n)])
+        groups_sorted: np.ndarray = sort_by_frequency(self.group)
+        group_before = self.group.copy()
+        for i, g in enumerate(groups_sorted):
+            self.group[group_before == g] = i
+        return self.group
+
+    def should_compute_groups(self) -> bool:
+        """Whether or not groups should be computed in this time step."""
+        return (
+            self.group_every_n_steps > 0
+            and self.steps % self.group_every_n_steps == 0
+        )
+
     def step(self) -> None:
         self._undirty()
 
@@ -224,10 +272,15 @@ class SimulationImplOriginal:
             + np.sum(delta_phi[top_k_indexes])
         ) % (2 * np.pi)
 
+        # Compute groups
+        if self.should_compute_groups():
+            self.compute_groups()
+
         # Prepare for next kick
         self.t_last[i] = t
         self.tau[i] = self.rng.rayleigh(np.sqrt(2 / np.pi))
 
+        self.steps += 1
         self.time = t
 
     def snapshot(self):
@@ -251,6 +304,7 @@ class _KwargsInitialConditions(TypedDict):
     tau: np.ndarray
     d_ij: np.ndarray
     group: np.ndarray
+    steps: int
 
 
 def compute_pairwise_distances(u_x: np.ndarray, u_y: np.ndarray) -> np.ndarray:
@@ -295,6 +349,7 @@ def generate_initial_conditions(
         ),
         "d_ij": d_ij,
         "group": np.zeros(n, dtype=np.int64),
+        "steps": 0,
     }
 
 
@@ -345,7 +400,6 @@ class SimulationRendererOriginal(SimulationRenderer[SimulationImplOriginal]):
         u_x, u_y = state.compute_positions(state.time)
         v_x, v_y = state.compute_velocities(state.time)
         if self.use_groups:
-            state.compute_groups()
             groups: np.ndarray = np.unique(state.group)
             index_colorspace: np.ndarray = np.linspace(
                 0, 6 * 255, len(groups), endpoint=False
@@ -422,8 +476,7 @@ class SimulationRecorderOriginal(SimulationRecorder[SimulationImplOriginal]):
         if self.use_groups:
             if not self.n_groups:
                 self.n_groups = []
-            groups: np.ndarray = np.unique(state.compute_groups())
-            self.n_groups.append(len(groups))
+            self.n_groups.append(len(np.unique(state.group)))
 
     @property
     def samples(self) -> float:

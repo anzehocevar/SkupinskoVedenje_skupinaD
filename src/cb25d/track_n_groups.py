@@ -32,18 +32,21 @@ def run_n_groups_original(
     }
 
     seed *= len(emergences) * runs_per_config
-    statistics: dict[str, np.ndarray] = {
-        "Swarming": np.zeros(steps_per_run - (steps_per_run//2)),
-        "Schooling": np.zeros(steps_per_run - (steps_per_run//2)),
-        "Milling": np.zeros(steps_per_run - (steps_per_run//2)),
+    statistics: dict[str, list[np.ndarray]] = {
+        "Swarming": [],
+        "Schooling": [],
+        "Milling": [],
     }
 
     def run(seed: int, att: float, ali: float):
+        state: SimulationImplOriginal = create_initial_state(att, ali, seed)
         run_batch_simulation(
-            create_initial_state(att, ali, seed),
-            rec := SimulationRecorderOriginal(skip_first_n=steps_per_run // 2, use_groups=True),
+            state,
+            rec := SimulationRecorderOriginal(skip_first_n=0, use_groups=True),
             steps=steps_per_run,
         )
+        if state.group_every_n_steps > 0 and rec.n_groups:
+            return rec.n_groups[::state.group_every_n_steps]
         return rec.n_groups
 
     for (_, name), result in run_multiprocess_simulations(
@@ -57,11 +60,9 @@ def run_n_groups_original(
             )
         },
     ).items():
-        statistics[name] += result
+        statistics[name].append(result)
 
-    for name in statistics.keys():
-        statistics[name] /= runs_per_config
-    return statistics
+    return {k: np.array(v) for k, v in statistics.items()}
 
 if __name__ == "__main__":
     from pathlib import Path
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     )
     def compute(k: int):
         statistics = run_n_groups_original(
-            seed=0,
+            seed=int(np.random.random()*1e10),
             create_initial_state=lambda att, ali, seed: SimulationImplOriginal(
                 c_eta=0.8,
                 c_gamma_ali=ali,
@@ -83,15 +84,16 @@ if __name__ == "__main__":
                 c_dist_critical=4*3,
                 c_dist_merge=min(3, 3),
                 **generate_initial_conditions(
-                    seed=0,
+                    seed=seed,
                     n=100,
                     l_att=3,
                 ),
+                group_every_n_steps=100,
             ),
-            runs_per_config=100,
+            runs_per_config=1000,
             steps_per_run=40000 * 100,
         )
-        p_base = Path("results/original/gamma")
+        p_base = Path("results/original/n_groups")
         p = p_base / f"k={k}"
         p.mkdir(parents=True, exist_ok=True)
         for em, result in statistics.items():
