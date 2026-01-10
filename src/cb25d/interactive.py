@@ -136,7 +136,7 @@ def _draw_grid(e: RenderEnvironment):
             break
 
 
-def _draw_clock(e: RenderEnvironment, t: float, timescale: Fraction, paused: bool):
+def _draw_clock(e: RenderEnvironment, t: float, timescale: Fraction, paused: bool, step: int = 0):
     size = 24
     line_height = 28
     w_pad = line_height - size
@@ -147,7 +147,7 @@ def _draw_clock(e: RenderEnvironment, t: float, timescale: Fraction, paused: boo
 
     n_decimals = 2 + max(-2, round(-math.log10(timescale)))
     s_time_text, _ = e.font_ui.render(
-        f"{t:0.{n_decimals}f}s", fgcolor=fgcolor, size=size
+        f"{t:0.{n_decimals}f}s{(' (step '+str(step)+')') if step else ''}", fgcolor=fgcolor, size=size
     )
     s_time_bg = pygame.Surface((s_time_text.get_width() + w_pad, line_height))
     s_time_bg.set_alpha(bgcolor[3])
@@ -294,7 +294,10 @@ def run_interactive_simulation[T: SimulationImpl](
                 _draw_grid(e)
             renderer.draw(e, state_lerp)
             if osd_enabled:
-                _draw_clock(e, t, timescale, paused)
+                _draw_clock(
+                    e, t, timescale, paused,
+                    (getattr(simulation._current_state, "steps", 0) // len(getattr(simulation._current_state, "t_last", [None])))
+                )
 
             pygame.display.flip()
             dt = clock.tick() / 1000
