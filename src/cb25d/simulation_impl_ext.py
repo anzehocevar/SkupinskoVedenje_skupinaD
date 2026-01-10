@@ -8,6 +8,7 @@ import pygame
 
 from cb25d.render_environment import RenderEnvironment
 from cb25d.simulation_framework import SimulationRecorder, SimulationRenderer
+from cb25d.unionfind import compress_all, union, find, sort_by_frequency
 
 
 @dataclass(kw_only=True, slots=True)
@@ -145,7 +146,7 @@ class SimulationImplExtended:
         v_y = v_mag * phi_unitvec_y
         return v_x, v_y
 
-    def compute_groups(self) -> np.ndarray:
+    def compute_groups_old(self) -> np.ndarray:
         n: int = self.u_x_last.shape[0]
         nearest_neighbours_indexes: np.ndarray = np.zeros((n, n - 1), dtype=np.int64)
         for i in range(n):
@@ -190,6 +191,40 @@ class SimulationImplExtended:
             si = index_to_set_index.get(self.group[k], None)
             if si is not None:
                 self.group[k] = min_elems[si] # type: ignore
+        return self.group
+
+    def compute_groups(self) -> np.ndarray:
+        n: int = self.u_x_last.shape[0]
+        nearest_neighbours_indexes: np.ndarray = np.zeros(
+            (n, n - 1), dtype=np.int64
+        )  # N-1 because we know every fish is nearest to itself
+        for i in range(n):
+            nearest_neighbours_indexes[i] = np.argsort(self.d_ij[i])[1:]
+        self.group = np.arange(n, dtype=np.int64)
+        last_in_sequence: np.ndarray = np.full(n, -1, dtype=np.int64)
+        for i in range(n):
+            if last_in_sequence[i] >= 0:
+                continue
+            i1: int = i
+            i2: int = nearest_neighbours_indexes[i, 0]
+            if self.d_ij[i1, i2] <= self.c_dist_critical:
+                path: list[int] = [i1, i2]
+                while nearest_neighbours_indexes[i2, 0] != i1:
+                    i1 = i2
+                    i2 = nearest_neighbours_indexes[i1, 0]
+                    path.append(i2)
+                last_in_sequence[np.array(path)] = min(i1, i2)
+        parent: np.ndarray = last_in_sequence
+        compress_all(parent)
+        for i in range(n):
+            for j in range(i+1, n):
+                if self.d_ij[i, j] < self.c_dist_merge:
+                    union(parent, i, j)
+        self.group = np.array([find(parent, i) for i in range(n)])
+        groups_sorted: np.ndarray = sort_by_frequency(self.group)
+        group_before = self.group.copy()
+        for i, g in enumerate(groups_sorted):
+            self.group[group_before == g] = i
         return self.group
     
     def should_compute_groups(self) -> bool:
@@ -389,7 +424,6 @@ class SimulationRendererExtended(SimulationRenderer[SimulationImplExtended]):
         u_x, u_y = state.compute_positions(state.time)
         v_x, v_y = state.compute_velocities(state.time)
         if self.use_groups:
-            state.compute_groups()
             groups: np.ndarray = np.unique(state.group)
             index_colorspace: np.ndarray = np.linspace(
                 0, 6 * 255, len(groups), endpoint=False
@@ -462,8 +496,7 @@ class SimulationRecorderExtended(SimulationRecorder[SimulationImplExtended]):
         if self.use_groups:
             if not self.n_groups:
                 self.n_groups = []
-            groups: np.ndarray = np.unique(state.compute_groups())
-            self.n_groups.append(len(groups))
+            self.n_groups.append(len(np.unique(state.group)))
 
     @property
     def samples(self) -> float:
