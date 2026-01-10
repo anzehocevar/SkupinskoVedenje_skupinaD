@@ -72,7 +72,7 @@ if __name__ == "__main__":
     )
     def compute(k: int):
         statistics = run_n_groups_original(
-            seed=0,
+            seed=int(np.random.random()*1e10),
             create_initial_state=lambda att, ali, seed: SimulationImplOriginal(
                 c_eta=0.8,
                 c_gamma_ali=ali,
@@ -84,7 +84,7 @@ if __name__ == "__main__":
                 c_dist_critical=4*3,
                 c_dist_merge=min(3, 3),
                 **generate_initial_conditions(
-                    seed=0,
+                    seed=seed,
                     n=100,
                     l_att=3,
                 ),
