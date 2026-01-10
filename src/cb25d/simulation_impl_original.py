@@ -324,6 +324,7 @@ def generate_initial_conditions(
     seed: int,
     n: int,
     l_att: float,
+    special_config: None | tuple[int, float, float] = None
 ) -> _KwargsInitialConditions:
     rng = np.random.default_rng(seed)
     """Uniformly random placement of fish in circle with centre (0, 0) and radius R"""
@@ -334,6 +335,26 @@ def generate_initial_conditions(
     u_y = r * np.sin(angle)
     phi = rng.random(n) * 2 * np.pi
     d_ij = compute_pairwise_distances(u_x, u_y)
+
+    if special_config:
+        k, att, ali = special_config
+        a, b = None, None
+        # Warning: look away
+        for _k, _att, _ali, _a, _b in [
+            (1, 0.6, 0.6, 3., 1.5),
+            (1, 0.22, 0.6, 5., 3.),
+            (1, 0.37, 0.2, 3., 1.5),
+            (2, 0.6, 0.2, 4., 2.),
+            (2, 0.2, 0.3, 3., 1.5),
+        ]:
+            if abs(k-_k) + abs(att-_att) + abs(ali-_ali) < 1e-3:
+                a, b = _a, _b
+        if a and b:
+            phi = np.zeros(n)
+            r = np.sqrt(np.random.rand(n))
+            u_x = a * r * np.cos(angle)
+            u_y = b * r * np.sin(angle)
+
     return {
         "c_l_att": l_att,
         "time": 0,
