@@ -60,6 +60,9 @@ class SimulationImplOriginal:
     c_dist_merge: float
     """Groups with fish, separated by distance less than this will be merged. Default: min(l_att, l_ali)."""
 
+    group_every_n_steps: int
+    """If positive, groups will be computed every n steps. If <= 0, groups won't be computed."""
+
     # Variables
     time: float
     """Will always be at the beginning of a kick unless the state is an interpolation."""
@@ -79,6 +82,8 @@ class SimulationImplOriginal:
     """Pairwise distances between all fish."""
     group: np.ndarray
     """Index of group that each fish belongs to."""
+    steps: int
+    """Number of steps that have been made."""
 
     _dirty: bool = False
     """If true, this state has been snapshotted and some its members are referenced in another state.
@@ -214,6 +219,13 @@ class SimulationImplOriginal:
             self.group[group_before == g] = i
         return self.group
 
+    def should_compute_groups(self) -> bool:
+        """Whether or not groups should be computed in this time step."""
+        return (
+            self.group_every_n_steps > 0
+            and self.steps % self.group_every_n_steps == 0
+        )
+
     def step(self) -> None:
         self._undirty()
 
@@ -260,10 +272,15 @@ class SimulationImplOriginal:
             + np.sum(delta_phi[top_k_indexes])
         ) % (2 * np.pi)
 
+        # Compute groups
+        if self.should_compute_groups():
+            self.compute_groups()
+
         # Prepare for next kick
         self.t_last[i] = t
         self.tau[i] = self.rng.rayleigh(np.sqrt(2 / np.pi))
 
+        self.steps += 1
         self.time = t
 
     def snapshot(self):
@@ -287,6 +304,7 @@ class _KwargsInitialConditions(TypedDict):
     tau: np.ndarray
     d_ij: np.ndarray
     group: np.ndarray
+    steps: int
 
 
 def compute_pairwise_distances(u_x: np.ndarray, u_y: np.ndarray) -> np.ndarray:
@@ -331,6 +349,7 @@ def generate_initial_conditions(
         ),
         "d_ij": d_ij,
         "group": np.zeros(n, dtype=np.int64),
+        "steps": 0,
     }
 
 
@@ -381,7 +400,6 @@ class SimulationRendererOriginal(SimulationRenderer[SimulationImplOriginal]):
         u_x, u_y = state.compute_positions(state.time)
         v_x, v_y = state.compute_velocities(state.time)
         if self.use_groups:
-            state.compute_groups()
             groups: np.ndarray = np.unique(state.group)
             index_colorspace: np.ndarray = np.linspace(
                 0, 6 * 255, len(groups), endpoint=False
@@ -458,8 +476,7 @@ class SimulationRecorderOriginal(SimulationRecorder[SimulationImplOriginal]):
         if self.use_groups:
             if not self.n_groups:
                 self.n_groups = []
-            groups: np.ndarray = np.unique(state.compute_groups())
-            self.n_groups.append(len(groups))
+            self.n_groups.append(len(np.unique(state.group)))
 
     @property
     def samples(self) -> float:

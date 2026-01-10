@@ -32,18 +32,21 @@ def run_n_groups_original(
     }
 
     seed *= len(emergences) * runs_per_config
-    statistics: dict[str, np.ndarray] = {
-        "Swarming": np.zeros(steps_per_run),
-        "Schooling": np.zeros(steps_per_run),
-        "Milling": np.zeros(steps_per_run),
+    statistics: dict[str, list[np.ndarray]] = {
+        "Swarming": [],
+        "Schooling": [],
+        "Milling": [],
     }
 
     def run(seed: int, att: float, ali: float):
+        state: SimulationImplOriginal = create_initial_state(att, ali, seed)
         run_batch_simulation(
-            create_initial_state(att, ali, seed),
+            state,
             rec := SimulationRecorderOriginal(skip_first_n=0, use_groups=True),
             steps=steps_per_run,
         )
+        if state.group_every_n_steps > 0 and rec.n_groups:
+            return rec.n_groups[::state.group_every_n_steps]
         return rec.n_groups
 
     for (_, name), result in run_multiprocess_simulations(
@@ -57,11 +60,9 @@ def run_n_groups_original(
             )
         },
     ).items():
-        statistics[name] += result
+        statistics[name].append(result)
 
-    for name in statistics.keys():
-        statistics[name] /= runs_per_config
-    return statistics
+    return {k: np.array(v) for k, v in statistics.items()}
 
 if __name__ == "__main__":
     from pathlib import Path
@@ -87,6 +88,7 @@ if __name__ == "__main__":
                     n=100,
                     l_att=3,
                 ),
+                group_every_n_steps=100,
             ),
             runs_per_config=1000,
             steps_per_run=40000 * 100,
