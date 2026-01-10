@@ -34,6 +34,9 @@ class SimulationImplExtended:
     """Critical distance for grouping."""
     c_dist_merge: float
     """Groups with fish, separated by distance less than this will be merged."""
+    
+    group_every_n_steps: int = 0
+    """If positive, groups will be computed every n steps. If <= 0, groups won't be computed."""
 
     # Extended model variables/constants
     c_omega: float
@@ -62,6 +65,8 @@ class SimulationImplExtended:
     """Pairwise distances between all fish."""
     group: np.ndarray
     """Index of group that each fish belongs to."""
+    steps: int
+    """Number of steps that have been made."""
 
     _dirty: bool = False
 
@@ -187,6 +192,13 @@ class SimulationImplExtended:
                 self.group[k] = min_elems[si] # type: ignore
         return self.group
     
+    def should_compute_groups(self) -> bool:
+        """Whether or not groups should be computed in this time step."""
+        return (
+            self.group_every_n_steps > 0
+            and self.steps % self.group_every_n_steps == 0
+        )
+    
     def step(self) -> None:
         self._undirty()
 
@@ -236,6 +248,11 @@ class SimulationImplExtended:
             + np.sqrt(dt_step) * self.c_gamma_rand * self.rng.normal()
         ) % (2 * np.pi)
 
+
+        # Compute groups -> used for simulation
+        if self.should_compute_groups():
+            self.compute_groups()
+
         # update 
         self.t_last[i] = t
         self.step_count[i] += 1
@@ -245,6 +262,7 @@ class SimulationImplExtended:
             self.t_cycle_start[i] = t
             self.tau[i] = self.rng.rayleigh(np.sqrt(2 / np.pi))
 
+        self.steps += 1
         self.time = t
 
 
@@ -273,6 +291,7 @@ class _KwargsInitialConditionsExt(TypedDict):
     step_count: np.ndarray
     d_ij: np.ndarray
     group: np.ndarray
+    steps: int
 
 
 def compute_pairwise_distances(u_x: np.ndarray, u_y: np.ndarray) -> np.ndarray:
@@ -320,6 +339,7 @@ def generate_extended_initial_conditions(
         "step_count": np.zeros(n, dtype=np.int64),
         "d_ij": d_ij,
         "group": np.zeros(n, dtype=np.int64),
+        "steps": 0,
     }
 
 
