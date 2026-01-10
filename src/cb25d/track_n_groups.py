@@ -91,7 +91,7 @@ if __name__ == "__main__":
             runs_per_config=1000,
             steps_per_run=40000 * 100,
         )
-        p_base = Path("results/original/gamma")
+        p_base = Path("results/original/n_groups")
         p = p_base / f"k={k}"
         p.mkdir(parents=True, exist_ok=True)
         for em, result in statistics.items():
