@@ -21,15 +21,19 @@ def run_n_groups_original(
         ],
         SimulationImplOriginal,
     ],
+    k: int,
     runs_per_config: int,
     steps_per_run: int,
 ):
 
-    emergences: dict[str, tuple[float, float]] = {
-        "Swarming": (0.6, 0.6),
-        "Schooling": (0.22, 0.6),
-        "Milling": (0.37, 0.2),
+    emergences: dict[tuple[int, str], tuple[float, float]] = {
+        (1, "Swarming"): (0.6, 0.6),
+        (1, "Schooling"): (0.22, 0.6),
+        (1, "Milling"): (0.37, 0.2),
+        (2, "Swarming"): (0.6, 0.2),
+        (2, "Schooling"): (0.2, 0.3),
     }
+    emergences = {key: val for key, val in emergences.items() if key[0]==k}
 
     seed *= len(emergences) * runs_per_config
     statistics: dict[str, list[np.ndarray]] = {
@@ -49,20 +53,20 @@ def run_n_groups_original(
             return rec.n_groups[::state.group_every_n_steps]
         return rec.n_groups
 
-    for (_, name), result in run_multiprocess_simulations(
+    for (_, emergence), result in run_multiprocess_simulations(
         fn=run,
         args={
             (i, ij): (seed + i, *args)
             for i, (ij, args) in enumerate(
-                (name, (att, ali))
-                for name, (att, ali) in emergences.items()
+                (emergence, (att, ali))
+                for emergence, (att, ali) in emergences.items()
                 for _ in range(runs_per_config)
             )
         },
     ).items():
-        statistics[name].append(result)
+        statistics[emergence[1]].append(result)
 
-    return {k: np.array(v) for k, v in statistics.items()}
+    return {k: np.array(v) for k, v in statistics.items() if v}
 
 if __name__ == "__main__":
     from pathlib import Path
@@ -87,9 +91,11 @@ if __name__ == "__main__":
                     seed=seed,
                     n=100,
                     l_att=3,
+                    special_config=(k, att, ali),
                 ),
                 group_every_n_steps=100,
             ),
+            k=k,
             runs_per_config=1000,
             steps_per_run=40000 * 100,
         )
