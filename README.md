@@ -2,6 +2,8 @@
 
 For info about the codebase, see [README_DEV.md](./README_DEV.md).
 
+For final report, see [this](./report/build/main.pdf).
+
 ## Group members
 
 - ja8769: [@jan146](https://github.com/jan146/)
