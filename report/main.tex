@@ -26,6 +26,7 @@
 
 \usepackage{graphicx}
 \usepackage{subcaption}  % for subfigures
+\usepackage{enumitem}
 
 % \graphicspath{{./fig/}}
 
@@ -33,7 +34,7 @@
 
 % Use letters for affiliations, numbers to show equal authorship (if applicable) and to indicate the corresponding author
 \author{Jan Anžur}
-\author{Maks Popovič}
+\author{Maks Popović}
 \author{Anže Hočevar}
 
 \affil{Collective behaviour course research seminar report} 
@@ -82,7 +83,9 @@
 
 \maketitle
 \thispagestyle{firststyle}
-\ifthenelse{\boolean{shortarticle}}{\ifthenelse{\boolean{singlecolumn}}{\abscontentformatted}{\abscontent}}{}
+\ifthenelse{\boolean{shortarticle}}{\ifthenelse{\boolean{singlecolumn}}{\abscontentformatted}
+\vspace{-10pt}
+{\abscontent}}{}
 
 % If your first paragraph (i.e. with the \dropcap) contains a list environment (quote, quotation, theorem, definition, enumerate, itemize...), the line after the list may have some extra indentation. If this is the case, add \parshape=0 to the end of the list environment.
 
@@ -119,11 +122,16 @@
 % as it can run into problems with floats and footnotes on the final page.
 %\pnasbreak
 
-\vspace{10pt}
+\vspace{0pt}
 \begin{multicols}{2}
 \section*{\bibname}
 % Bibliography
 \bibliography{bibliography}
 \end{multicols}
+
+\clearpage
+\appendix
+\section*{Appendix}
+\input{appendix.tex}
 
 \end{document}
