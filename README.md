@@ -29,4 +29,4 @@ Currently, the burst phase is an instantaneous event. We intend to add a "duty c
 |--------|----------|-------------|
 | ✅ **Report 1: Concept Review and Baseline Setup** | 16 Nov 2025 | Detailed review of existing collective behavior models for fish. Review of literature describing the behavior of real fish to ensure we don't end up modeling something that doesn't happen in nature. |
 | ✅ **Report 2: Methods and Verification Plan** | 7 Dec 2025 | Reproduction of original paper. Proposal for contributions and verification methods following initial experiments. |
-| ⬜ **Report 3: Final Report and Presentation** | 11 Jan 2026 | Final polished report. Includes reproduction of original paper, our contribution, verification results, discussion and ideas for future work. |
+| ✅ **Report 3: Final Report and Presentation** | 11 Jan 2026 | Final polished report. Includes reproduction of original paper, our contribution, verification results, discussion and ideas for future work. |
